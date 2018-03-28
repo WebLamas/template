@@ -51,16 +51,16 @@ class Query{
 		$this->orderby.=$param.' '.$order;
 		return $this;
 	}
-	public function where($item,$value){
+	public function where($item, $value, $action = '='){ 
 		if(in_array($item,['post_content','post_title','ID','post_status'])){
-			$this->where[]='('.$item.'="'.$value.'")';
+			$this->where[]='('.$item.$action.'"'.$value.'")';
 			return $this;
 		}
 		foreach($this->post_fields as $pf){
 			if($pf['name']==$item){
 				$this->fields[]='pm_'.$item.'.meta_value as '.$item;
 				$this->joins[]='left join wp_postmeta pm_'.$item.' on pm_'.$item.'.post_id=wp_posts.ID';
-				$this->where[]='(pm_'.$item.'.meta_key="_'.$item.'" AND pm_'.$item.'.meta_value="'.$value.'")';
+				$this->where[]='(pm_'.$item.'.meta_key="_'.$item.'" AND pm_'.$item.'.meta_value'.$action.'"'.$value.'")';
 				return $this;
 			}
 		}
@@ -76,7 +76,7 @@ class Query{
 		global $wpdb;
 		$query='select '.implode(',',$this->fields).' from '.$wpdb->posts;	
 		if(!empty($this->joins)){
-			$query.=' '.implode(' ',$this->joins);
+			$query.=' '.implode(' ',array_unique($this->joins));
 		}
 		if(!empty($this->where)){
 			$query.=' where '.implode('AND',$this->where);
@@ -87,9 +87,11 @@ class Query{
 		if(!empty($this->limit)){
 			$query.=' limit '.$this->limit;
 		}
+		//var_dump($this);
 		//var_dump($query);
 		$r= $wpdb->get_results($query);
 		$result=[];
+		$thumbnails_ids=[];
 		foreach($r as $rq){
 			$rq=(array)$rq;
 			if(!empty($rq['post_content'])){
@@ -108,12 +110,23 @@ class Query{
 				
 			}
 			if(!empty($rq['thumbnail_id'])){
-				$sql='select guid from '.$wpdb->posts.' where ID='.$rq['thumbnail_id'];
-				$q=$wpdb->get_results($sql);
-				$rq['thumbnail']=$q[0]->guid;
+				$thumbnails_ids[]=$rq['thumbnail_id'];
 			}
 			$result[]=$rq;
 		}
+		if(!empty($thumbnails_ids)){
+			$sql='select ID,guid from '.$wpdb->posts.' where ID in ('.implode(',',$thumbnails_ids).')';
+			$thumbnails=$wpdb->get_results($sql);
+			$thumbnails=wp_list_pluck($thumbnails,'guid','ID');
+			//$rq['thumbnail']=$q[0]->guid;
+			foreach($result as $k=>$v){
+				if(!empty($thumbnails[$v['thumbnail_id']])){
+					$v['thumbnail']=$thumbnails[$v['thumbnail_id']];
+					$result[$k]=$v;
+				}
+			}
+		}
+		
 		//var_dump($result);
 		return $result;
 	}
@@ -132,7 +145,7 @@ class Query{
 		if(!empty($this->limit)){
 			$query.=' limit '.$this->limit;
 		}
-		//var_dump($query);
+		
 		$r= $wpdb->get_results($query);
 		
 		//var_dump($query);

@@ -1,8 +1,8 @@
 <?php
 
-abstract class WeblamasCustomPostNew{
+abstract class WeblamasCustomPost{
 	//abstract public $name;
-	public static $has_cats=false;
+	public $has_cats=false;
 	abstract function getArgs();
 	public function query(){
 		$q=new Query();
@@ -21,10 +21,10 @@ abstract class WeblamasCustomPostNew{
 			add_action('init',array($this,'archivedescription_save'));
 
 			}
-		if(static::$has_cats){
-			add_filter( 'rewrite_rules_array', array(get_called_class(),'add_rewrite_rules') );
-			add_filter( 'post_type_link', array(get_called_class(),'filter_post_type_link'), 10, 2 );
-			add_filter('post_type_archive_link',array(get_called_class(),'filter_post_type_archive_link'),10,2);
+		if($this->has_cats){
+			add_filter( 'rewrite_rules_array', array($this,'add_rewrite_rules') );
+			add_filter( 'post_type_link', array($this,'filter_post_type_link'), 10, 2 );
+			add_filter('post_type_archive_link',array($this,'filter_post_type_archive_link'),10,2);
 		}
 		$cf=$this->customFields();
 		if(!empty($cf)){
@@ -140,23 +140,18 @@ abstract class WeblamasCustomPostNew{
 		}
 	}
 	public function add_meta_box(){
-		$where='side';
-		if(!empty(static::$position)){
-			$where=static::$position;
-		}
 			add_meta_box(
 				static::$name.'_sectionid',
 				"Дополнительные настройки",
 				array($this,'meta_box_callback'),
 				static::$name,
-				$where
+				'side'
 				);
 	}
 	function meta_box_callback( $post ) {
 		wp_nonce_field( static::$name.'_save_meta_box_data', static::$name.'_meta_box_nonce' );
 		foreach($this->customFields() as $fieldm){
 			$field_value=get_post_meta( $post->ID, '_'.$fieldm['name'], true );
-			$field_value=base64_decode($field_value);
 			
 			if($fieldm['type']=='json'){
 				$fields=$fieldm['fields'];
@@ -175,25 +170,11 @@ abstract class WeblamasCustomPostNew{
 					$field_value=$json_field_value[$field['name']];
 					$field['name']=$fieldm['name'].'['.$field['name'].']';
 				}
-				$field_value=str_replace('\\"','"',$field_value);
 				echo '<div><label for="'.$field['name'].'">'.$field['label'].'</label></div><div>';
-				
-				if($field['type']=='taxonomy'){
-					$cats=get_terms($field['taxonomy'],['hide_empty'=>false]);
-					$field['type']='select';
-					$field['options']=[];
-					foreach($cats as $cat){
-						$field['options'][$cat->term_id]=$cat->name;
-					}
-				}
-				
-				if($field['type']=='editor'){
-					//var_dump($field_value);
-					$name=str_replace('[','_',$field['name']);
-					$name=str_replace(']','_',$name);
-					wp_editor($field_value, $name, $settings = array('textarea_name'=>$field['name'],'quicktags'=>true) );
-				}elseif($field['type']=='text'){
+				if($field['type']=='text'){
 					echo '<input type="text" name="'.$field['name'].'" value="'.$field_value.'">';
+				}elseif($field['type']=='date'){
+					echo '<input type="date" name="'.$field['name'].'" value="'.$field_value.'">';
 				}elseif($field['type']=='textarea'){
 					echo '<textarea name="'.$field['name'].'">'.$field_value.'</textarea>';
 				}elseif($field['type']=='select'){
@@ -274,6 +255,22 @@ abstract class WeblamasCustomPostNew{
 			}
 		}
 	}
+	public function modify_field($field,$field_value){
+		if($field['type']=='json'){
+			var_dump('need_some changes');
+			if(is_array($field_value)){
+				$field_value=serialize(array_filter($field_value));
+			}else{
+				$field_value=serialize(array());
+			}
+			die();
+		}
+		if($field['type']=='date'){
+			$q=new DateTime($field_value);
+			return $q->format('Y-m-d');
+		}
+		return $field_value;
+	}
 	public function save( $post_id ) {
 		if($_POST['post_type']!=static::$name) return;
 		if ( ! isset( $_POST[static::$name.'_meta_box_nonce'] ) )return;
@@ -282,22 +279,11 @@ abstract class WeblamasCustomPostNew{
 		if ( ! current_user_can( 'edit_post', $post_id ) ) 	return;
 		
 		foreach($this->customFields() as $field){
-			
 			if ( ! isset( $_POST[$field['name']] ) ) continue;
-			$my_data = $_POST[$field['name']] ;
-			if($field['type']=='json'){
-				if(is_array($_POST[$field['name']])){
-					$my_data=serialize(array_filter($_POST[$field['name']]));
-				}else{
-					$my_data=serialize(array());
-					
-				}
-			}
-			$my_data=base64_encode($my_data);
+			$my_data=$this->modify_field($field,$_POST[$field['name']]);
 			update_post_meta( $post_id, '_'.$field['name'], $my_data );
-			
 		}
-		//die();
+		die();
 	}	
 	
 }
