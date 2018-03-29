@@ -2,7 +2,7 @@
 
 abstract class WeblamasCustomPost{
 	//abstract public $name;
-	public $has_cats=false;
+	public static $has_cats=false;
 	abstract function getArgs();
 	public function query(){
 		$q=new Query();
@@ -22,10 +22,10 @@ abstract class WeblamasCustomPost{
 
 			}
 		if($this->has_cats){
-			add_filter( 'rewrite_rules_array', array($this,'add_rewrite_rules') );
-			add_filter( 'post_type_link', array($this,'filter_post_type_link'), 10, 2 );
-			add_filter('post_type_archive_link',array($this,'filter_post_type_archive_link'),10,2);
-		}
+			add_filter( 'rewrite_rules_array', array(get_called_class(),'add_rewrite_rules') );
+			add_filter( 'post_type_link', array(get_called_class(),'filter_post_type_link'), 10, 2 );
+			add_filter('post_type_archive_link',array(get_called_class(),'filter_post_type_archive_link'),10,2);
+ 		}
 		$cf=$this->customFields();
 		if(!empty($cf)){
 			add_action( 'add_meta_boxes', array( $this, 'add_meta_box' ) );
@@ -140,12 +140,16 @@ abstract class WeblamasCustomPost{
 		}
 	}
 	public function add_meta_box(){
+		$where='side';	
+		if(!empty(static::$position)){	
+			$where=static::$position;	
+		}
 			add_meta_box(
 				static::$name.'_sectionid',
 				"Дополнительные настройки",
 				array($this,'meta_box_callback'),
 				static::$name,
-				'side'
+				$where
 				);
 	}
 	function meta_box_callback( $post ) {
@@ -170,8 +174,21 @@ abstract class WeblamasCustomPost{
 					$field_value=$json_field_value[$field['name']];
 					$field['name']=$fieldm['name'].'['.$field['name'].']';
 				}
+				$field_value=str_replace('\\"','"',$field_value);
+				if($field['type']=='taxonomy'){	
+					$cats=get_terms($field['taxonomy'],['hide_empty'=>false]);	
+					$field['type']='select';	
+					$field['options']=[];	
+					foreach($cats as $cat){	
+						$field['options'][$cat->term_id]=$cat->name;	
+					}	
+				}
 				echo '<div><label for="'.$field['name'].'">'.$field['label'].'</label></div><div>';
-				if($field['type']=='text'){
+				if($field['type']=='editor'){	
+				$name=str_replace('[','_',$field['name']);	
+					$name=str_replace(']','_',$name);	
+					wp_editor($field_value, $name, $settings = array('textarea_name'=>$field['name'],'quicktags'=>true) );	
+				}elseif($field['type']=='text'){
 					echo '<input type="text" name="'.$field['name'].'" value="'.$field_value.'">';
 				}elseif($field['type']=='date'){
 					echo '<input type="date" name="'.$field['name'].'" value="'.$field_value.'">';
