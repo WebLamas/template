@@ -3,13 +3,25 @@ class Query{
 	public $where=[];
 	public $joins=[];
 	public $orderby='';
+	public $apply_filters=true;
+	public $post_type='';
 	public function post_type($post_type){
 		$this->where[]='(post_type="'.$post_type.'")';
+		$this->post_type=$post_type;
 		return $this;
 	}
 	public function fields($params){
 		foreach($params as $k=>$field){
-			if(in_array($field,['post_content','post_title','ID','post_status'])){
+			if(in_array($field,['link'])){
+				unset($params[$k]);
+				$params[]='post_name';
+				$params[]='ID';
+				$this->fields[]='1 as link';
+			}
+		}
+		$params=array_unique($params);
+		foreach($params as $k=>$field){
+			if(in_array($field,['post_content','post_title','ID','post_status','post_name'])){
 				$this->fields[]=$field;
 				unset($params[$k]);
 				continue;
@@ -87,26 +99,40 @@ class Query{
 		if(!empty($this->limit)){
 			$query.=' limit '.$this->limit;
 		}
-		//var_dump($this);
 		//var_dump($query);
 		$r= $wpdb->get_results($query);
 		$result=[];
 		$thumbnails_ids=[];
 		foreach($r as $rq){
 			$rq=(array)$rq;
-			if(!empty($rq['post_content'])){
+			if(!empty($rq['post_content'])&&$this->apply_filters){
+				remove_filter('the_content','wpautop');// убираем фильтр wpautop
 				$rq['post_content'] = apply_filters( 'the_content', $rq['post_content'] );
+				add_filter('the_content','wpautop');// убираем фильтр wpautop
 				$rq['post_content'] = str_replace( ']]>', ']]&gt;', $rq['post_content'] );
 	
 			}
-			foreach($this->post_fields as $pf){
+			foreach($this->post_fields as $pf){ //только для json
 				if($pf['type']!='json')continue;
 				if(empty($rq[$pf['name']])) continue;
+				$rq[$pf['name']]=base64_decode($rq[$pf['name']]);
 				//var_dump($rq[$pf['name']]);
-				$rq[$pf['name']]=unserialize($rq[$pf['name']]);
+				$rq[$pf['name']]=maybe_unserialize($rq[$pf['name']]);
 				//?????????????
-				$rq[$pf['name']]=unserialize($rq[$pf['name']]);
+				$rq[$pf['name']]=maybe_unserialize($rq[$pf['name']]);
 				//var_dump($rq[$pf['name']]);
+				
+			}
+			if(isset($rq['link'])){
+				if(has_filter('post_type_link')){ //потом сделать для категорий
+					$rq['link']=get_post_permalink($rq['ID']);
+				}else{
+					global $wp_rewrite;
+					$post_link = $wp_rewrite->get_extra_permastruct($this->post_type);
+					$post_link = str_replace("%$this->post_type%", $rq['post_name'], $post_link);
+					$post_link = home_url( user_trailingslashit($post_link) );
+					$rq['link']=$post_link;
+				}
 				
 			}
 			if(!empty($rq['thumbnail_id'])){
@@ -115,13 +141,14 @@ class Query{
 			$result[]=$rq;
 		}
 		if(!empty($thumbnails_ids)){
-			$sql='select ID,guid from '.$wpdb->posts.' where ID in ('.implode(',',$thumbnails_ids).')';
+			$sql='select post_id,meta_value from '.$wpdb->postmeta.' where meta_key="_wp_attachment_metadata" and post_id in ('.implode(',',$thumbnails_ids).')';
 			$thumbnails=$wpdb->get_results($sql);
-			$thumbnails=wp_list_pluck($thumbnails,'guid','ID');
-			//$rq['thumbnail']=$q[0]->guid;
+			$thumbnails=wp_list_pluck($thumbnails,'meta_value','post_id');
+			
 			foreach($result as $k=>$v){
 				if(!empty($thumbnails[$v['thumbnail_id']])){
-					$v['thumbnail']=$thumbnails[$v['thumbnail_id']];
+					$th=maybe_unserialize($thumbnails[$v['thumbnail_id']]);
+					$v['thumbnail']=wp_upload_dir()['baseurl'].'/'.$th['file'];
 					$result[$k]=$v;
 				}
 			}
@@ -129,6 +156,10 @@ class Query{
 		
 		//var_dump($result);
 		return $result;
+	}
+	public function first(){
+		$items=$this->limit(1)->get();
+		return reset($items);
 	}
 	public function count(){
 		global $wpdb;

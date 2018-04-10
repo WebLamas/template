@@ -21,11 +21,11 @@ abstract class WeblamasCustomPost{
 			add_action('init',array($this,'archivedescription_save'));
 
 			}
-		if($this->has_cats){
+		if(static::$has_cats){
 			add_filter( 'rewrite_rules_array', array(get_called_class(),'add_rewrite_rules') );
 			add_filter( 'post_type_link', array(get_called_class(),'filter_post_type_link'), 10, 2 );
 			add_filter('post_type_archive_link',array(get_called_class(),'filter_post_type_archive_link'),10,2);
- 		}
+		}
 		$cf=$this->customFields();
 		if(!empty($cf)){
 			add_action( 'add_meta_boxes', array( $this, 'add_meta_box' ) );
@@ -119,6 +119,7 @@ abstract class WeblamasCustomPost{
 			'has_archive' => true,
 			'menu_position'=>5,
 			'query_var'             => true,
+			'rewrite'             => array('slug' => static::$name),
 			);
 		foreach($q as $k=>$v){
 			if(!isset($args[$k])){
@@ -160,7 +161,7 @@ abstract class WeblamasCustomPost{
 			if($fieldm['type']=='json'){
 				$fields=$fieldm['fields'];
 				if(!empty($field_value)){
-					$json_field_value=unserialize($field_value);
+					$json_field_value=maybe_unserialize(base64_decode($field_value));
 				}else{
 					$json_field_value=array();
 					}
@@ -182,7 +183,15 @@ abstract class WeblamasCustomPost{
 					foreach($cats as $cat){	
 						$field['options'][$cat->term_id]=$cat->name;	
 					}	
+				}elseif($field['type']=='post_type'){
+					$posts=get_posts(['post_type'=>$field['post_type']]);
+					$field['type']='select';	
+					$field['options']=[];	
+					foreach($posts as $post){	
+						$field['options'][$post->ID]=$post->post_title;	
+					}
 				}
+				
 				echo '<div><label for="'.$field['name'].'">'.$field['label'].'</label></div><div>';
 				if($field['type']=='editor'){	
 				$name=str_replace('[','_',$field['name']);	
@@ -264,7 +273,7 @@ abstract class WeblamasCustomPost{
 					//echo '<script src="'.get_template_directory_uri().'/admin.js"></script>';
 
 					echo '<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDkYtMcjg1cfV3aBe87ROSV3udADCpu-ZM&signed_in=true&callback=initMap" async defer></script>';
-					echo '<input type="text" id="coords" name="'.$field['name'].'" value=\''.$field_value.'\'size="25" /></div>';
+					echo '<input type="hidden" id="coords" name="'.$field['name'].'" value=\''.$field_value.'\'size="25" /></div>';
 				}else{
 					echo 'нужно запрограммировать новый тип поля';
 				}
@@ -274,13 +283,11 @@ abstract class WeblamasCustomPost{
 	}
 	public function modify_field($field,$field_value){
 		if($field['type']=='json'){
-			var_dump('need_some changes');
 			if(is_array($field_value)){
-				$field_value=serialize(array_filter($field_value));
+				$field_value=base64_encode(serialize(array_filter($field_value)));
 			}else{
-				$field_value=serialize(array());
+				$field_value=base64_encode(serialize(array()));
 			}
-			die();
 		}
 		if($field['type']=='date'){
 			$q=new DateTime($field_value);
@@ -300,7 +307,7 @@ abstract class WeblamasCustomPost{
 			$my_data=$this->modify_field($field,$_POST[$field['name']]);
 			update_post_meta( $post_id, '_'.$field['name'], $my_data );
 		}
-		die();
+		//die();
 	}	
 	
 }

@@ -11,7 +11,6 @@ class WeblamasOptions_parent{
 		}else{
 			return;
 		}
-//		var_dump($arguments);
 		list($atts,$content,$tag)=$arguments;
 		$content=do_shortcode($content);
 		$f=get_stylesheet_directory().'/html/mod_'.$function.'.php';
@@ -19,44 +18,45 @@ class WeblamasOptions_parent{
 			ob_start();
 			include($f);
 			$q=ob_get_clean();
-//			ob_end(
-//			var_dump(ob_get_level());
 			return $q;
 			}
 		else{
 			return 'нет файла"'.get_stylesheet_directory().'/html/mod_'.$function.'.php"';
 		}
 	}
-	public function shortcodes(){
-		return [];
-	}
+	public function shortcodes(){return [];}
 	public function __construct(){
 		add_action('admin_menu', array($this,'menupage'));
 		add_action('init',array($this,'save_options'));
 		add_action('add_meta_boxes', array($this,'meta_metabox')  );
 		add_action('save_post', array($this,'save_meta'));
 		add_action('wp_head', array($this,'add_meta_tags'));
+		add_action('wp_head', array($this,'add_jquery_footer'),1000);
+		add_action('wp_footer', array($this,'add_jquery_footerf'),1000);
 		$shortcodes=$this->shortcodes();
 		foreach($shortcodes as $code){
 			add_shortcode( $code, array($this,'shortcode_'.$code ));
 			}
 	}
+	public function add_jquery_footer(){
+		//http://writing.colin-gourlay.com/safely-using-ready-before-including-jquery/
+		echo '<script>(function(w,d,u){w.readyQ=[];w.bindReadyQ=[];function p(x,y){if(x=="ready"){w.bindReadyQ.push(y);}else{w.readyQ.push(x);}};var a={ready:p,bind:p};w.$=w.jQuery=function(f){if(f===d||f===u){return a}else{p(f)}}})(window,document)</script>';
+	}
+	public function add_jquery_footerf(){
+		echo '<script>(function($,d){$.each(readyQ,function(i,f){$(f)});$.each(bindReadyQ,function(i,f){$(d).bind("ready",f)})})(jQuery,document)</script>';
+	}
+
 	public function add_meta_tags(){
-		if('https://'.$_SERVER['SERVER_NAME']!==get_option('home')&&'http://'.$_SERVER['SERVER_NAME']!==get_option('home')){
-			return ;
-		}
 		if(is_single()||is_page()){
 			$field_value=get_post_meta( get_the_ID(), '_meta_tags', true );
 			if(empty($field_value)){
-				return ;
+				$field_value=[];
+			}else{
+				$field_value=unserialize($field_value);
 			}
-			$field_value=unserialize($field_value);
 
 			if(!empty($field_value['description'])){
 				echo '<meta name="description" content="'.$field_value['description'].'">'.PHP_EOL;
-			}
-			if(!empty($field_value['keywords'])){
-				echo '<meta name="keywords" content="'.$field_value['keywords'].'">'.PHP_EOL;
 			}
 			if(!empty($field_value['title'])){
 				echo '<title>'.$field_value['title'].'</title>';
@@ -64,25 +64,25 @@ class WeblamasOptions_parent{
 				echo '<title>'.get_the_title().'</title>';
 				}
 			return true;
-		}elseif(is_tax()){
+		}elseif(is_tax()||is_category()||is_tag()){
 			$field_value=get_term_meta(get_queried_object()->term_id,'_meta_tags',true);
 			if(empty($field_value)){
-				return;
+				$field_value=[];
+			}else{
+				$field_value=unserialize($field_value);
 			}
-			$field_value=unserialize($field_value);
 
 			if(!empty($field_value['description'])){
 				echo '<meta name="description" content="'.$field_value['description'].'">'.PHP_EOL;
 			}
-			if(!empty($field_value['keywords'])){
-				echo '<meta name="keywords" content="'.$field_value['keywords'].'">'.PHP_EOL;
-			}
 			if(!empty($field_value['title'])){
 				echo '<title>'.$field_value['title'].'</title>';
 			}else{
-				echo '<title>'.get_the_title().'</title>';
+				echo '<title>'.get_queried_object()->name.'</title>';
 				}
 			return true;
+		}elseif(is_author()){
+				echo '<title>'.get_queried_object()->display_name.'</title>';
 		}elseif(is_post_type_archive()){ 
 			$field_value=get_option('archivedesc_'.get_queried_object()->name);
 			if(empty($field_value))return;
@@ -93,9 +93,6 @@ class WeblamasOptions_parent{
 			if(!empty($field_value['meta_desc'])){
 				echo '<meta name="description" content="'.$field_value['meta_desc'].'">'.PHP_EOL;
 			}
-			if(!empty($field_value['meta_keys'])){
-				echo '<meta name="keywords" content="'.$field_value['meta_keys'].'">'.PHP_EOL;
-			}
 			if(!empty($field_value['title'])){
 				echo '<title>'.$field_value['title'].'</title>';
 			}elseif(!empty($field_value['h1'])){
@@ -105,12 +102,20 @@ class WeblamasOptions_parent{
 				}
 			}
 		return false;
-		
 	}
 	public function save_meta($post_id){
-		if(!empty($_POST['meta_tags'])&&is_array($_POST['meta_tags']))
-		$my_data=serialize($_POST['meta_tags']);
-		update_post_meta( $post_id, '_meta_tags', $my_data );
+		if(!empty($_POST['meta_tags'])&&is_array($_POST['meta_tags'])){
+			$meta=$_POST['meta_tags'];
+			if(empty($meta['description'])){
+				$meta['description']=(get_extended($_POST['content'])['main']);
+			}
+			if(empty($meta['title'])){
+				$meta['title']=$_POST['post_title'];
+			}
+			$my_data=serialize($meta);
+			update_post_meta( $post_id, '_meta_tags', $my_data );
+		}
+		
 	}
 	
 	public function meta_metabox(){
@@ -128,13 +133,12 @@ class WeblamasOptions_parent{
 			
 			
 		}
-		echo '<div><label>title</label></div><div><input type="text" name="meta_tags[title]" value="'.$field_value['title'].'" style="width:100%"></div>';
-		echo '<div><label>meta keywords</label></div><div><input type="text" name="meta_tags[keywords]" value="'.$field_value['keywords'].'" style="width:100%"></div>';
-		echo '<div><label>meta description</label></div><div><input type="text" name="meta_tags[description]" value="'.htmlspecialchars($field_value['description']).'" style="width:100%"></div>';
+		echo '<div><label>Заголовок страницы в браузере</label></div><div><input type="text" name="meta_tags[title]" value="'.$field_value['title'].'" style="width:100%"></div>';
+		echo '<div><label>Мeta Description</label></div><div><textarea rows=3 name="meta_tags[description]" style="width:100%">'.htmlspecialchars($field_value['description']).'</textarea></div>';
 	}
 
 	public function menupage(){
-		if(!empty($this->getParams)){
+		if(!empty($this->getParams())){
 			add_menu_page('Настройки', 'Настройки', 8, 'weblamasoptions', array($this,'options_page'),'',7);
 			}
 	}
@@ -197,7 +201,7 @@ class WeblamasOptions_parent{
 
 
 // ADD FIELD TO CATEGORY TERM PAGE
-add_action( 'courses_cat_add_form_fields', '___add_form_field_term_meta_text' );
+add_action( 'services_cat_add_form_fields', '___add_form_field_term_meta_text' );
 function ___add_form_field_term_meta_text() { ?>
 	<div class="form-field term-meta-text-wrap">
         <label for="term-meta-text">Заголовок страницы в браузере</label>
@@ -218,7 +222,7 @@ function ___add_form_field_term_meta_text() { ?>
 
 <?php }
 // ADD FIELD TO CATEGORY EDIT PAGE
-add_action( 'courses_cat_edit_form_fields', '___edit_form_field_term_meta_text' );
+add_action( 'services_cat_edit_form_fields', '___edit_form_field_term_meta_text' );
 function ___edit_form_field_term_meta_text( $term ) {
 	$value = get_term_meta( $term->term_id, '_meta_tags', true );
 	$value1 = get_term_meta( $term->term_id, 'main_desc', true );
@@ -252,8 +256,8 @@ function ___edit_form_field_term_meta_text( $term ) {
 
 <?php }
 // SAVE TERM META (on term edit & create)
-add_action( 'edit_courses_cat',   '___save_term_meta_text' );
-add_action( 'create_courses_cat', '___save_term_meta_text' );
+add_action( 'edit_services_cat',   '___save_term_meta_text' );
+add_action( 'create_services_cat', '___save_term_meta_text' );
 function ___save_term_meta_text( $term_id ) {
 	if(!empty($_POST['meta_tags'])&&is_array($_POST['meta_tags'])){
 	$my_data=serialize($_POST['meta_tags']);
