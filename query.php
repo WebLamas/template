@@ -5,6 +5,7 @@ class Query{
 	public $orderby='';
 	public $apply_filters=true;
 	public $post_type='';
+	public $image_sizes=[];
 	public function post_type($post_type){
 		$this->where[]='(post_type="'.$post_type.'")';
 		$this->post_type=$post_type;
@@ -41,7 +42,8 @@ class Query{
 		}
 		if(empty($params)) return $this;
 		foreach($params as $k=>$field){
-			if($field=='thumbnail'){
+			if($field=='thumbnail'||mb_substr($field,0,9)=='thumbnail'){
+				$this->image_sizes[]=mb_substr($field,10);
 				$field='thumbnail_id';
 				$this->fields[]='pm_'.$field.'.meta_value as '.$field;
 				$this->joins[]='left join wp_postmeta pm_'.$field.' on pm_'.$field.'.post_id=wp_posts.ID';
@@ -50,6 +52,7 @@ class Query{
 				continue;
 			}
 		}
+		
 		if(empty($params)) return $this;
 		
 		if(!empty($params)){
@@ -106,13 +109,13 @@ class Query{
 		foreach($r as $rq){
 			$rq=(array)$rq;
 			if(!empty($rq['post_content'])&&$this->apply_filters){
-				remove_filter('the_content','wpautop');// óáèðàåì ôèëüòð wpautop
+				remove_filter('the_content','wpautop');// ÑƒÐ±Ð¸Ñ€Ð°ÐµÐ¼ Ñ„Ð¸Ð»ÑŒÑ‚Ñ€ wpautop
 				$rq['post_content'] = apply_filters( 'the_content', $rq['post_content'] );
-				add_filter('the_content','wpautop');// óáèðàåì ôèëüòð wpautop
+				add_filter('the_content','wpautop');// ÑƒÐ±Ð¸Ñ€Ð°ÐµÐ¼ Ñ„Ð¸Ð»ÑŒÑ‚Ñ€ wpautop
 				$rq['post_content'] = str_replace( ']]>', ']]&gt;', $rq['post_content'] );
 	
 			}
-			foreach($this->post_fields as $pf){ //òîëüêî äëÿ json
+			foreach($this->post_fields as $pf){ //Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð´Ð»Ñ json
 				if($pf['type']!='json')continue;
 				if(empty($rq[$pf['name']])) continue;
 				$rq[$pf['name']]=base64_decode($rq[$pf['name']]);
@@ -124,7 +127,7 @@ class Query{
 				
 			}
 			if(isset($rq['link'])){
-				if(has_filter('post_type_link')){ //ïîòîì ñäåëàòü äëÿ êàòåãîðèé
+				if(has_filter('post_type_link')){ //Ð¿Ð¾Ñ‚Ð¾Ð¼ ÑÐ´ÐµÐ»Ð°Ñ‚ÑŒ Ð´Ð»Ñ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð¹
 					$rq['link']=get_post_permalink($rq['ID']);
 				}else{
 					global $wp_rewrite;
@@ -147,7 +150,13 @@ class Query{
 			
 			foreach($result as $k=>$v){
 				if(!empty($thumbnails[$v['thumbnail_id']])){
+					
 					$th=maybe_unserialize($thumbnails[$v['thumbnail_id']]);
+					foreach($this->image_sizes as $size){
+						if(!empty($th['sizes'][$size])){
+							$v['thumbnail_'.$size]=wp_upload_dir()['baseurl'].'/'.pathinfo($th['file'],PATHINFO_DIRNAME).'/'.$th['sizes'][$size]['file'];
+						}
+					}
 					$v['thumbnail']=wp_upload_dir()['baseurl'].'/'.$th['file'];
 					$result[$k]=$v;
 				}
