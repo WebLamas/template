@@ -3,22 +3,21 @@
 abstract class WeblamasCustomPost{
 	//abstract public $name;
 	public static $has_cats=false;
-	abstract function getArgs();
-	public function query(){
+	public static $has_archive=false;
+	abstract static function getArgs();
+	public static function query(){
 		$q=new Query();
-		//var_dump(get_class(static));
-		//var_dump(static::getName());
 		$q->post_type(static::$name);
 		$q->post_fields=static::customFields();
 		return $q;
 	}
-	public function __construct(){
-		add_action( 'init', array($this,'createposttype') );
-		add_filter('manage_'.static::$name.'_posts_columns' , array($this,'add_columns'));
-		add_action( 'manage_posts_custom_column' , array($this,'custom_columns'), 10, 2 );
-		if($this->has_archive){
-			add_action( 'admin_menu', array($this,'addarchivedescription') );
-			add_action('init',array($this,'archivedescription_save'));
+	public static function init(){
+		add_action( 'init', array(get_called_class(),'createposttype') );
+		add_filter('manage_'.static::$name.'_posts_columns' , array(get_called_class(),'add_columns'));
+		add_action( 'manage_posts_custom_column' , array(get_called_class(),'custom_columns'), 10, 2 );
+		if(static::$has_archive){
+			add_action( 'admin_menu', array(get_called_class(),'addarchivedescription') );
+			add_action('init',array(get_called_class(),'archivedescription_save'));
 
 			}
 		if(static::$has_cats){
@@ -26,17 +25,17 @@ abstract class WeblamasCustomPost{
 			add_filter( 'post_type_link', array(get_called_class(),'filter_post_type_link'), 10, 2 );
 			add_filter('post_type_archive_link',array(get_called_class(),'filter_post_type_archive_link'),10,2);
 		}
-		$cf=$this->customFields();
+		$cf=static::customFields();
 		if(!empty($cf)){
-			add_action( 'add_meta_boxes', array( $this, 'add_meta_box' ) );
-			add_action( 'save_post', array( $this, 'save' ) );
+			add_action( 'add_meta_boxes', array( get_called_class(), 'add_meta_box' ) );
+			add_action( 'save_post', array( get_called_class(), 'save' ) );
 		}
 		
 	}
-	public function custom_columns($column,$post_id){return '';}
-	public function add_columns($columns){return $columns;}
-	public function customFields(){return array();}
-	public function archivedescription_save(){
+	public static function custom_columns($column,$post_id){return '';}
+	public static function add_columns($columns){return $columns;}
+	public static function customFields(){return array();}
+	public static function archivedescription_save(){
 		if($_REQUEST['page']!=static::$name . '-description' or  $_POST['action']!='save')return;
 		$post=$_POST;
 		if(function_exists('pll_languages_list')){
@@ -51,7 +50,7 @@ abstract class WeblamasCustomPost{
 		update_option('archivedesc_'.static::$name,serialize($post));
 		}
 	public function addarchivedescription(){
-		add_submenu_page('edit.php?post_type=' . static::$name,"Описание для архива","Описание для архива",'edit_posts',static::$name . '-description',array($this,'archivedescription'));	
+		add_submenu_page('edit.php?post_type=' . static::$name,"Описание для архива","Описание для архива",'edit_posts',static::$name . '-description',array(get_called_class(),'archivedescription'));	
 	}
 	public function archivedescription_fields($lang=''){
 		$value=get_option('archivedesc_'.static::$name);
@@ -78,10 +77,10 @@ abstract class WeblamasCustomPost{
 		echo '<form method="post">';
 		if(function_exists('pll_languages_list')){
 		foreach(pll_languages_list() as $lang){
-			$this->archivedescription_fields($lang);
+			static::archivedescription_fields($lang);
 			}
 		}else{
-			$this->archivedescription_fields($lang);
+			static::archivedescription_fields($lang);
 		}
 		echo '<button name="action" value="save">Сохранить</button>';
 		echo '</form>';
@@ -134,8 +133,8 @@ abstract class WeblamasCustomPost{
 	}
 
 	public function createposttype(){
-		register_post_type( static::$name,$this->populateArgs($this->getArgs()));
-		$cargs=$this->catArgs();
+		register_post_type( static::$name,static::populateArgs(static::getArgs()));
+		$cargs=static::catArgs();
 		if(!empty($cargs)){
 			register_taxonomy( static::$name.'_cat', static::$name, $cargs );
 		}
@@ -148,16 +147,15 @@ abstract class WeblamasCustomPost{
 			add_meta_box(
 				static::$name.'_sectionid',
 				"Дополнительные настройки",
-				array($this,'meta_box_callback'),
+				array(get_called_class(),'meta_box_callback'),
 				static::$name,
 				$where
 				);
 	}
 	function meta_box_callback( $post ) {
 		wp_nonce_field( static::$name.'_save_meta_box_data', static::$name.'_meta_box_nonce' );
-		foreach($this->customFields() as $fieldm){
+		foreach(static::customFields() as $fieldm){
 			$field_value=get_post_meta( $post->ID, '_'.$fieldm['name'], true );
-			
 			if($fieldm['type']=='json'){
 				$fields=$fieldm['fields'];
 				if(!empty($field_value)){
@@ -176,27 +174,27 @@ abstract class WeblamasCustomPost{
 					$field['name']=$fieldm['name'].'['.$field['name'].']';
 				}
 				$field_value=str_replace('\\"','"',$field_value);
+				echo '<div><label for="'.$field['name'].'">'.$field['label'].'</label></div><div>';
 				if($field['type']=='taxonomy'){	
 					$cats=get_terms($field['taxonomy'],['hide_empty'=>false]);	
 					$field['type']='select';	
-					$field['options']=[];	
+					$field['options']=array();	
 					foreach($cats as $cat){	
 						$field['options'][$cat->term_id]=$cat->name;	
 					}	
 				}elseif($field['type']=='post_type'){
-					$posts=get_posts(['post_type'=>$field['post_type']]);
+					global $wpdb;
+					$posts=$wpdb->get_results('select ID,post_title from wp_posts where post_type="'.$field['post_type'].'"');
+					$field['options']=wp_list_pluck($posts,'post_title','ID');
 					$field['type']='select';	
-					$field['options']=[];	
-					foreach($posts as $post){	
-						$field['options'][$post->ID]=$post->post_title;	
-					}
 				}
 				
-				echo '<div><label for="'.$field['name'].'">'.$field['label'].'</label></div><div>';
-				if($field['type']=='editor'){	
-				$name=str_replace('[','_',$field['name']);	
-					$name=str_replace(']','_',$name);	
-					wp_editor($field_value, $name, $settings = array('textarea_name'=>$field['name'],'quicktags'=>true) );	
+				if($field['type']=='checkbox'){
+					echo '<input type="checkbox" name="'.$field['name'].'" '.(!empty($field_value)?'checked':'').'>';
+				}elseif($field['type']=='editor'){
+					$name=str_replace('[','_',$field['name']);
+					$name=str_replace(']','_',$name);
+					wp_editor($field_value, $name, $settings = array('textarea_name'=>$field['name'],'quicktags'=>true) );
 				}elseif($field['type']=='text'){
 					echo '<input type="text" name="'.$field['name'].'" value="'.$field_value.'">';
 				}elseif($field['type']=='date'){
@@ -296,6 +294,7 @@ abstract class WeblamasCustomPost{
 		return $field_value;
 	}
 	public function save( $post_id ) {
+		if(empty($_POST['post_type']))return;
 		if($_POST['post_type']!=static::$name) return;
 		if ( ! isset( $_POST[static::$name.'_meta_box_nonce'] ) )return;
 		if ( ! wp_verify_nonce( $_POST[static::$name.'_meta_box_nonce'], static::$name.'_save_meta_box_data' ) ) return;
@@ -303,7 +302,10 @@ abstract class WeblamasCustomPost{
 		if ( ! current_user_can( 'edit_post', $post_id ) ) 	return;
 		
 		foreach($this->customFields() as $field){
-			if ( ! isset( $_POST[$field['name']] ) ) continue;
+			if ( ! isset( $_POST[$field['name']] ) ){
+				update_post_meta( $post_id, '_'.$field['name'], '' );
+				continue;
+			}
 			$my_data=$this->modify_field($field,$_POST[$field['name']]);
 			update_post_meta( $post_id, '_'.$field['name'], $my_data );
 		}

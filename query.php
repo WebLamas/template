@@ -1,19 +1,22 @@
 <?php 
 class Query{
-	public $where=[];
-	public $joins=[];
+	public $where=array();
+	public $joins=array();
 	public $orderby='';
 	public $apply_filters=true;
 	public $post_type='';
-	public $image_sizes=[];
+	public $image_sizes=array();
 	public function post_type($post_type){
 		$this->where[]='(post_type="'.$post_type.'")';
 		$this->post_type=$post_type;
 		return $this;
 	}
 	public function fields($params){
+		if(!is_array($params)){
+			$params=array($params);
+		}
 		foreach($params as $k=>$field){
-			if(in_array($field,['link'])){
+			if(in_array($field,array('link'))){
 				unset($params[$k]);
 				$params[]='post_name';
 				$params[]='ID';
@@ -22,7 +25,7 @@ class Query{
 		}
 		$params=array_unique($params);
 		foreach($params as $k=>$field){
-			if(in_array($field,['post_content','post_title','ID','post_status','post_name'])){
+			if(in_array($field,array('post_content','post_title','ID','post_status','post_name','post_excerpt'))){
 				$this->fields[]=$field;
 				unset($params[$k]);
 				continue;
@@ -33,8 +36,7 @@ class Query{
 			foreach($this->post_fields as $pf){
 				if($pf['name']==$field){
 					$this->fields[]='pm_'.$field.'.meta_value as '.$field;
-					$this->joins[]='left join wp_postmeta pm_'.$field.' on pm_'.$field.'.post_id=wp_posts.ID';
-					$this->where[]='(pm_'.$field.'.meta_key="_'.$field.'")';
+					$this->joins[]='left join wp_postmeta pm_'.$field.' on (pm_'.$field.'.post_id=wp_posts.ID AND pm_'.$field.'.meta_key="_'.$field.'")';
 					unset($params[$k]);
 					continue;
 				}
@@ -46,13 +48,11 @@ class Query{
 				$this->image_sizes[]=mb_substr($field,10);
 				$field='thumbnail_id';
 				$this->fields[]='pm_'.$field.'.meta_value as '.$field;
-				$this->joins[]='left join wp_postmeta pm_'.$field.' on pm_'.$field.'.post_id=wp_posts.ID';
-				$this->where[]='(pm_'.$field.'.meta_key="_'.$field.'")';
+				$this->joins[]='left join wp_postmeta pm_'.$field.' on (pm_'.$field.'.post_id=wp_posts.ID AND pm_'.$field.'.meta_key="_'.$field.'")';
 				unset($params[$k]);
 				continue;
 			}
 		}
-		
 		if(empty($params)) return $this;
 		
 		if(!empty($params)){
@@ -67,15 +67,15 @@ class Query{
 		return $this;
 	}
 	public function where($item, $value, $action = '='){ 
-		if(in_array($item,['post_content','post_title','ID','post_status'])){
+		if(in_array($item,array('post_content','post_title','ID','post_status'))){
 			$this->where[]='('.$item.$action.'"'.$value.'")';
 			return $this;
 		}
 		foreach($this->post_fields as $pf){
 			if($pf['name']==$item){
 				$this->fields[]='pm_'.$item.'.meta_value as '.$item;
-				$this->joins[]='left join wp_postmeta pm_'.$item.' on pm_'.$item.'.post_id=wp_posts.ID';
-				$this->where[]='(pm_'.$item.'.meta_key="_'.$item.'" AND pm_'.$item.'.meta_value'.$action.'"'.$value.'")';
+				$this->joins[]='left join wp_postmeta pm_'.$item.' on (pm_'.$item.'.post_id=wp_posts.ID AND pm_'.$item.'.meta_key="_'.$item.'")';
+				//$this->where[]='(pm_'.$item.'.meta_key="_'.$item.'" AND pm_'.$item.'.meta_value'.$action.'"'.$value.'")';
 				return $this;
 			}
 		}
@@ -104,8 +104,8 @@ class Query{
 		}
 		//var_dump($query);
 		$r= $wpdb->get_results($query);
-		$result=[];
-		$thumbnails_ids=[];
+		$result=array();
+		$thumbnails_ids=array();
 		foreach($r as $rq){
 			$rq=(array)$rq;
 			if(!empty($rq['post_content'])&&$this->apply_filters){
@@ -147,17 +147,18 @@ class Query{
 			$sql='select post_id,meta_value from '.$wpdb->postmeta.' where meta_key="_wp_attachment_metadata" and post_id in ('.implode(',',$thumbnails_ids).')';
 			$thumbnails=$wpdb->get_results($sql);
 			$thumbnails=wp_list_pluck($thumbnails,'meta_value','post_id');
-			
+			$upload_dir=wp_upload_dir();
 			foreach($result as $k=>$v){
 				if(!empty($thumbnails[$v['thumbnail_id']])){
 					
 					$th=maybe_unserialize($thumbnails[$v['thumbnail_id']]);
 					foreach($this->image_sizes as $size){
 						if(!empty($th['sizes'][$size])){
-							$v['thumbnail_'.$size]=wp_upload_dir()['baseurl'].'/'.pathinfo($th['file'],PATHINFO_DIRNAME).'/'.$th['sizes'][$size]['file'];
+							
+							$v['thumbnail_'.$size]=$upload_dir['baseurl'].'/'.pathinfo($th['file'],PATHINFO_DIRNAME).'/'.$th['sizes'][$size]['file'];
 						}
 					}
-					$v['thumbnail']=wp_upload_dir()['baseurl'].'/'.$th['file'];
+					$v['thumbnail']=$upload_dir['baseurl'].'/'.$th['file'];
 					$result[$k]=$v;
 				}
 			}

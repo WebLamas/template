@@ -2,7 +2,7 @@
 class WeblamasOptions_parent{
 	public static $options=null;
 	public function getParams(){
-		return [];
+		return array();
 	}
 	public function __call($name,$arguments){
 		$function=explode('_',$name,2);
@@ -24,7 +24,7 @@ class WeblamasOptions_parent{
 			return 'нет файла"'.get_stylesheet_directory().'/html/mod_'.$function.'.php"';
 		}
 	}
-	public function shortcodes(){return [];}
+	public function shortcodes(){return array();}
 	public function __construct(){
 		add_action('admin_menu', array($this,'menupage'));
 		add_action('init',array($this,'save_options'));
@@ -50,7 +50,7 @@ class WeblamasOptions_parent{
 		if(is_single()||is_page()){
 			$field_value=get_post_meta( get_the_ID(), '_meta_tags', true );
 			if(empty($field_value)){
-				$field_value=[];
+				$field_value=array();
 			}else{
 				$field_value=unserialize($field_value);
 			}
@@ -67,7 +67,7 @@ class WeblamasOptions_parent{
 		}elseif(is_tax()||is_category()||is_tag()){
 			$field_value=get_term_meta(get_queried_object()->term_id,'_meta_tags',true);
 			if(empty($field_value)){
-				$field_value=[];
+				$field_value=array();
 			}else{
 				$field_value=unserialize($field_value);
 			}
@@ -104,18 +104,9 @@ class WeblamasOptions_parent{
 		return false;
 	}
 	public function save_meta($post_id){
-		if(!empty($_POST['meta_tags'])&&is_array($_POST['meta_tags'])){
-			$meta=$_POST['meta_tags'];
-			if(empty($meta['description'])){
-				$meta['description']=(get_extended($_POST['content'])['main']);
-			}
-			if(empty($meta['title'])){
-				$meta['title']=$_POST['post_title'];
-			}
-			$my_data=serialize($meta);
-			update_post_meta( $post_id, '_meta_tags', $my_data );
-		}
-		
+		if(!empty($_POST['meta_tags'])&&is_array($_POST['meta_tags']))
+		$my_data=serialize($_POST['meta_tags']);
+		update_post_meta( $post_id, '_meta_tags', $my_data );
 	}
 	
 	public function meta_metabox(){
@@ -138,7 +129,8 @@ class WeblamasOptions_parent{
 	}
 
 	public function menupage(){
-		if(!empty($this->getParams())){
+		$par=$this->getParams();
+		if(!empty($par)){
 			add_menu_page('Настройки', 'Настройки', 8, 'weblamasoptions', array($this,'options_page'),'',7);
 			}
 	}
