@@ -75,7 +75,7 @@ class Query{
 			if($pf['name']==$item){
 				$this->fields[]='pm_'.$item.'.meta_value as '.$item;
 				$this->joins[]='left join wp_postmeta pm_'.$item.' on (pm_'.$item.'.post_id=wp_posts.ID AND pm_'.$item.'.meta_key="_'.$item.'")';
-				//$this->where[]='(pm_'.$item.'.meta_key="_'.$item.'" AND pm_'.$item.'.meta_value'.$action.'"'.$value.'")';
+				$this->where[]='(pm_'.$item.'.meta_value'.$action.'"'.$value.'")';
 				return $this;
 			}
 		}
@@ -109,14 +109,15 @@ class Query{
 		foreach($r as $rq){
 			$rq=(array)$rq;
 			if(!empty($rq['post_content'])&&$this->apply_filters){
-				remove_filter('the_content','wpautop');// СѓР±РёСЂР°РµРј С„РёР»СЊС‚СЂ wpautop
+				remove_filter('the_content','wpautop');// убираем фильтр wpautop
 				$rq['post_content'] = apply_filters( 'the_content', $rq['post_content'] );
-				add_filter('the_content','wpautop');// СѓР±РёСЂР°РµРј С„РёР»СЊС‚СЂ wpautop
+				add_filter('the_content','wpautop');// убираем фильтр wpautop
 				$rq['post_content'] = str_replace( ']]>', ']]&gt;', $rq['post_content'] );
 	
 			}
-			foreach($this->post_fields as $pf){ //С‚РѕР»СЊРєРѕ РґР»СЏ json
-				if($pf['type']!='json')continue;
+			//var_dump($rq);
+			foreach($this->post_fields as $pf){ //только для json&multiple
+				if($pf['type']!='json'&&$pf['type']!='multiple')continue;
 				if(empty($rq[$pf['name']])) continue;
 				$rq[$pf['name']]=base64_decode($rq[$pf['name']]);
 				//var_dump($rq[$pf['name']]);
@@ -127,7 +128,7 @@ class Query{
 				
 			}
 			if(isset($rq['link'])){
-				if(has_filter('post_type_link')){ //РїРѕС‚РѕРј СЃРґРµР»Р°С‚СЊ РґР»СЏ РєР°С‚РµРіРѕСЂРёР№
+				if(has_filter('post_type_link')){ //потом сделать для категорий
 					$rq['link']=get_post_permalink($rq['ID']);
 				}else{
 					global $wp_rewrite;

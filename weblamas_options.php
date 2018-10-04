@@ -56,12 +56,12 @@ class WeblamasOptions_parent{
 			}
 
 			if(!empty($field_value['description'])){
-				echo '<meta name="description" content="'.$field_value['description'].'">'.PHP_EOL;
+				echo '<meta name="description" content="'.strip_tags($field_value['description']).'">'.PHP_EOL;
 			}
 			if(!empty($field_value['title'])){
-				echo '<title>'.$field_value['title'].'</title>';
+				echo '<title>'.strip_tags($field_value['title']).'</title>';
 			}else{
-				echo '<title>'.get_the_title().'</title>';
+				echo '<title>'.strip_tags(get_the_title()).'</title>';
 				}
 			return true;
 		}elseif(is_tax()||is_category()||is_tag()){
@@ -73,16 +73,16 @@ class WeblamasOptions_parent{
 			}
 
 			if(!empty($field_value['description'])){
-				echo '<meta name="description" content="'.$field_value['description'].'">'.PHP_EOL;
+				echo '<meta name="description" content="'.strip_tags($field_value['description']).'">'.PHP_EOL;
 			}
 			if(!empty($field_value['title'])){
-				echo '<title>'.$field_value['title'].'</title>';
+				echo '<title>'.strip_tags($field_value['title']).'</title>';
 			}else{
-				echo '<title>'.get_queried_object()->name.'</title>';
+				echo '<title>'.strip_tags(get_queried_object()->name).'</title>';
 				}
 			return true;
 		}elseif(is_author()){
-				echo '<title>'.get_queried_object()->display_name.'</title>';
+				echo '<title>'.strip_tags(get_queried_object()->display_name).'</title>';
 		}elseif(is_post_type_archive()){ 
 			$field_value=get_option('archivedesc_'.get_queried_object()->name);
 			if(empty($field_value))return;
@@ -91,14 +91,14 @@ class WeblamasOptions_parent{
 				$field_value=$field_value[pll_current_language()];
 			}
 			if(!empty($field_value['meta_desc'])){
-				echo '<meta name="description" content="'.$field_value['meta_desc'].'">'.PHP_EOL;
+				echo '<meta name="description" content="'.strip_tags($field_value['meta_desc']).'">'.PHP_EOL;
 			}
 			if(!empty($field_value['title'])){
-				echo '<title>'.$field_value['title'].'</title>';
+				echo '<title>'.strip_tags($field_value['title']).'</title>';
 			}elseif(!empty($field_value['h1'])){
-				echo '<title>'.$field_value['h1'].'</title>';
+				echo '<title>'.strip_tags($field_value['h1']).'</title>';
 			}else{
-				echo '<title>'.get_queried_object()->label.'</title>';
+				echo '<title>'.strip_tags(get_queried_object()->label).'</title>';
 				}
 			}
 		return false;
@@ -146,6 +146,18 @@ class WeblamasOptions_parent{
 		if(!empty($v))
 			echo $v;
 	}
+	public function formatValue($name,$format=''){
+		$val=self::getValue($name);
+		if($format=='phone'){
+			$arr = array('(',')',' ','-');
+			$val=str_replace($arr,'',$val);
+		}elseif(!empty($format)){
+			var_dump('unknown formatting');
+			die();
+		}
+		return $val;
+	}
+	
 	public function options_page(){
 		?>
 		<div class="wrap">
@@ -260,3 +272,42 @@ function ___save_term_meta_text( $term_id ) {
 	}
 }
 
+add_action('wp_print_styles', function(){
+	global $wp_styles;
+	$styles=array();
+	foreach($wp_styles->queue as $k=>$item){
+		if(in_array($item,array('admin-bar')))continue;
+		$styles[]=$wp_styles->registered[$item]->src;
+		unset($wp_styles->queue[$k]);
+	}
+	
+	$echo=array();
+	foreach($styles as $file){
+			
+			$file=str_replace(get_option('siteurl'),'',$file);
+			$file=get_home_path().$file;
+			$mincss_s=file_get_contents($file);
+			//$mincss_s=mb_substr($mincss_s,0,500);
+			$mincss_dir=pathinfo($file)["dirname"];
+			$mincss_dir=str_replace(get_home_path(),'',$mincss_dir).'/';
+			$mincss_s=str_replace("url(","url(".$mincss_dir,$mincss_s);
+			$mincss_s=str_replace("url(".$mincss_dir."data:image","url(data:image",$mincss_s);
+			$mincss_s=str_replace("url(".$mincss_dir."\"data:image","url(\"data:image",$mincss_s);
+			$mincss_s=str_replace("url(".$mincss_dir."'","url('".$mincss_dir,$mincss_s);
+			$mincss_date=filemtime($file);
+			$file_c=get_stylesheet_directory().'/css/cache/'.md5($mincss_s).'.css';
+			if(file_exists($file_c)&&filemtime($file_c)>$mincss_data){
+				$echo[]=file_get_contents($file_c);
+			}else{
+				$url = "https://cssminifier.com/raw";
+				$postdata = array("http" => array(
+				"method"  => "POST",
+				"header"  => "Content-type: application/x-www-form-urlencoded",
+				"content" => http_build_query( array("input" => $mincss_s) ) ) );
+				$minified=file_get_contents($url, false, stream_context_create($postdata));
+				file_put_contents($file_c,$minified);
+				$echo[]=$minified;
+			}
+			}
+	echo '<style>'.implode($echo).'</style>';
+}, 100);

@@ -157,124 +157,67 @@ abstract class WeblamasCustomPost{
 		foreach(static::customFields() as $fieldm){
 			$field_value=get_post_meta( $post->ID, '_'.$fieldm['name'], true );
 			if($fieldm['type']=='json'){
-				$fields=$fieldm['fields'];
 				if(!empty($field_value)){
 					$json_field_value=maybe_unserialize(base64_decode($field_value));
 				}else{
 					$json_field_value=array();
 					}
-					
-				
-			}else{
-				$fields=array($fieldm);
-			}
-			foreach($fields as $field){
-				if($fieldm['type']=='json'){
-					$field_value=$json_field_value[$field['name']];
-					$field['name']=$fieldm['name'].'['.$field['name'].']';
-				}
-				$field_value=str_replace('\\"','"',$field_value);
-				echo '<div><label for="'.$field['name'].'">'.$field['label'].'</label></div><div>';
-				if($field['type']=='taxonomy'){	
-					$cats=get_terms($field['taxonomy'],['hide_empty'=>false]);	
-					$field['type']='select';	
-					$field['options']=array();	
-					foreach($cats as $cat){	
-						$field['options'][$cat->term_id]=$cat->name;	
-					}	
-				}elseif($field['type']=='post_type'){
-					global $wpdb;
-					$posts=$wpdb->get_results('select ID,post_title from wp_posts where post_type="'.$field['post_type'].'"');
-					$field['options']=wp_list_pluck($posts,'post_title','ID');
-					$field['type']='select';	
+				foreach($fieldm['fields'] as $field){
+					echo '<div><label for="'.$fieldm['name'].'['.$field['name'].']'.'">'.$field['label'].'</label></div><div>';
+					FieldRenderer::render($field,$fieldm['name'].'['.$field['name'].']',$json_field_value[$field['name']]);
+					echo '</div>';
 				}
 				
-				if($field['type']=='checkbox'){
-					echo '<input type="checkbox" name="'.$field['name'].'" '.(!empty($field_value)?'checked':'').'>';
-				}elseif($field['type']=='editor'){
-					$name=str_replace('[','_',$field['name']);
-					$name=str_replace(']','_',$name);
-					wp_editor($field_value, $name, $settings = array('textarea_name'=>$field['name'],'quicktags'=>true) );
-				}elseif($field['type']=='text'){
-					echo '<input type="text" name="'.$field['name'].'" value="'.$field_value.'">';
-				}elseif($field['type']=='date'){
-					echo '<input type="date" name="'.$field['name'].'" value="'.$field_value.'">';
-				}elseif($field['type']=='textarea'){
-					echo '<textarea name="'.$field['name'].'">'.$field_value.'</textarea>';
-				}elseif($field['type']=='select'){
-					echo '<select name="'.$field['name'].'">';
-					foreach($field['options'] as $k=>$v){
-						echo '<option value="'.$k.'"'.($k==$field_value?' selected':'').'>'.$v.'</option>';
-					}
-					echo '</select>';
-				}elseif($field['type']=='info'){
-					if(!empty($field['callback'])){
-						echo call_user_func($field['callback'],$post);
-					}elseif(!empty($field['html'])){
-						echo $field['html'];
-					}
-				}elseif($field['type']=='mappoint'){
-					if(empty($field_value)){
-						$field_value=base64_encode('{"lat": 55.75583, "lng": 37.61778}');
-					}
-					echo '<script>
-					function base64_encode( data ) {    // Encodes data with MIME base64
-						var b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-						var o1, o2, o3, h1, h2, h3, h4, bits, i=0, enc="";
-						do { // pack three octets into four hexets
-							o1 = data.charCodeAt(i++);
-							o2 = data.charCodeAt(i++);
-							o3 = data.charCodeAt(i++);
-							bits = o1<<16 | o2<<8 | o3;
-							h1 = bits>>18 & 0x3f;
-							h2 = bits>>12 & 0x3f;
-							h3 = bits>>6 & 0x3f;
-							h4 = bits & 0x3f;
-							enc += b64.charAt(h1) + b64.charAt(h2) + b64.charAt(h3) + b64.charAt(h4);
-						} while (i < data.length);
-						switch( data.length % 3 ){
-							case 1:
-								enc = enc.slice(0, -2) + "==";
-							break;
-							case 2:
-								enc = enc.slice(0, -1) + "=";
-							break;
-						}
-						return enc;
-					}
-
-										function initMap() {
-					
-					var location=JSON.parse(\''.base64_decode($field_value).'\');
-					  var map = new google.maps.Map(document.getElementById("map"), {
-						zoom: 4,
-						center: location
-					  });
-					  console.log(document.getElementById("coords").value);
-					  
-					  
-					  var marker= new google.maps.Marker({position: location, map: map});
-					  google.maps.event.addListener(map, "click", function(event) {
-						 console.log("click");
-						startLocation = event.latLng;
-						placeMarker(startLocation);
-						});
-
-
-						function placeMarker(location,map) {
-							marker.setPosition(location);
-							document.getElementById("coords").value=base64_encode(JSON.stringify(location));
-						}
-						
-					}</script>';
-					echo '<div id="map"></div><style>#map{height:300px}</style>';
-					//echo '<script src="'.get_template_directory_uri().'/admin.js"></script>';
-
-					echo '<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDkYtMcjg1cfV3aBe87ROSV3udADCpu-ZM&signed_in=true&callback=initMap" async defer></script>';
-					echo '<input type="hidden" id="coords" name="'.$field['name'].'" value=\''.$field_value.'\'size="25" /></div>';
+			}elseif($fieldm['type']=='multiple'){
+				//$field_value="";
+				if(!empty($field_value)){
+					$multiple_field_value=maybe_unserialize(base64_decode($field_value));
 				}else{
-					echo 'нужно запрограммировать новый тип поля';
+					$multiple_field_value=array(array());
+					}
+				echo '<div class="multiple multiple_'.$fieldm['name'].'">';
+				foreach($multiple_field_value as $k=>$row){
+					echo '<div class="item" data-counter="'.$k.'">';
+					foreach($fieldm['fields'] as $field){
+						echo '<div><label for="'.$field['name'].'['.$k.']['.$field['name'].']">'.$field['label'].'</label></div><div>';
+						FieldRenderer::render($field,$fieldm['name'].'['.$k.']['.$field['name'].']',$row[$field['name']]);
+						echo '</div>';
+					}
+					echo '<button type="button" class="remove_item">-</button>';
+					echo '</div>';
 				}
+				echo '<button type="button" class="add_item">+</button>';
+				echo '</div>';
+				?>
+				<style>
+				.item{
+					border:1px solid gray;
+				}
+				</style>
+				<script>
+				$(document).ready(function(){
+					$('.multiple_<?php echo $fieldm['name'];?>').on('click','.remove_item',function(){
+						$(this).closest('.item').remove();
+					});
+					$('.multiple_<?php echo $fieldm['name'];?> .add_item').click(function(){
+						var item=$(this).closest('.multiple').find('.item').last();
+						var find='<?php echo $fieldm['name'];?>\['+item.data('counter')+'\]';
+						var newitem=(item.html().replace(new RegExp(find.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'),'g'),'<?php echo $fieldm['name'];?>['+(1+item.data('counter'))+']'));
+						console.log(newitem);
+						newitem=newitem.replace(/ value=".+?"/ig,'');
+						console.log(newitem);
+						newitem='<div class="item" data-counter="'+(1+item.data('counter'))+'">'+newitem+'</div>';
+						$(newitem).insertBefore($('.multiple_<?php echo $fieldm['name'];?> .add_item'));
+						
+						
+						//console.log(s.match('/*name="<?php echo $fieldm['name'];?>"*/'));
+					});
+				});
+				</script>
+				<?php
+			}else{
+				echo '<div><label for="'.$fieldm['name'].'">'.$fieldm['label'].'</label></div><div>';
+				FieldRenderer::render($fieldm,$fieldm['name'],$field_value);
 				echo '</div>';
 			}
 		}
@@ -287,9 +230,23 @@ abstract class WeblamasCustomPost{
 				$field_value=base64_encode(serialize(array()));
 			}
 		}
+		if($field['type']=='multiple'){
+			if(is_array($field_value)){
+				foreach($field_value as $k=>$v){
+					$field_value[$k]=array_filter($v);
+				}
+				$field_value=array_values(array_filter($field_value));
+				$field_value=base64_encode(serialize($field_value));
+			}else{
+				$field_value=base64_encode(serialize(array(array())));
+			}
+		}
 		if($field['type']=='date'){
 			$q=new DateTime($field_value);
 			return $q->format('Y-m-d');
+		}
+		if($field['type']=='checkbox'){
+			return !empty($field_value)?1:0;
 		}
 		return $field_value;
 	}
@@ -300,13 +257,13 @@ abstract class WeblamasCustomPost{
 		if ( ! wp_verify_nonce( $_POST[static::$name.'_meta_box_nonce'], static::$name.'_save_meta_box_data' ) ) return;
 		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE )return;
 		if ( ! current_user_can( 'edit_post', $post_id ) ) 	return;
-		
-		foreach($this->customFields() as $field){
+		$cf=static::customFields();
+		foreach($cf as $field){
 			if ( ! isset( $_POST[$field['name']] ) ){
 				update_post_meta( $post_id, '_'.$field['name'], '' );
 				continue;
 			}
-			$my_data=$this->modify_field($field,$_POST[$field['name']]);
+			$my_data=static::modify_field($field,$_POST[$field['name']]);
 			update_post_meta( $post_id, '_'.$field['name'], $my_data );
 		}
 		//die();
