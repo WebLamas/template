@@ -35,8 +35,8 @@ class Query{
 		foreach($params as $k=>$field){
 			foreach($this->post_fields as $pf){
 				if($pf['name']==$field){
-					$this->fields[]='pm_'.$field.'.meta_value as '.$field;
-					$this->joins[]='left join wp_postmeta pm_'.$field.' on (pm_'.$field.'.post_id=wp_posts.ID AND pm_'.$field.'.meta_key="_'.$field.'")';
+					$this->fields[]='`pm_'.$field.'`.`meta_value` as `'.$field.'`';
+					$this->joins[]='left join `wp_postmeta` `pm_'.$field.'` on (`pm_'.$field.'`.`post_id`=`wp_posts`.`ID` AND `pm_'.$field.'`.`meta_key`="_'.$field.'")';
 					unset($params[$k]);
 					continue;
 				}
@@ -48,7 +48,7 @@ class Query{
 				$this->image_sizes[]=mb_substr($field,10);
 				$field='thumbnail_id';
 				$this->fields[]='pm_'.$field.'.meta_value as '.$field;
-				$this->joins[]='left join wp_postmeta pm_'.$field.' on (pm_'.$field.'.post_id=wp_posts.ID AND pm_'.$field.'.meta_key="_'.$field.'")';
+				$this->joins[]='left join `wp_postmeta` `pm_'.$field.'` on (`pm_'.$field.'`.`post_id`=`wp_posts`.`ID` AND `pm_'.$field.'`.`meta_key`="_'.$field.'")';
 				unset($params[$k]);
 				continue;
 			}
@@ -73,8 +73,8 @@ class Query{
 		}
 		foreach($this->post_fields as $pf){
 			if($pf['name']==$item){
-				$this->fields[]='pm_'.$item.'.meta_value as '.$item;
-				$this->joins[]='left join wp_postmeta pm_'.$item.' on (pm_'.$item.'.post_id=wp_posts.ID AND pm_'.$item.'.meta_key="_'.$item.'")';
+				$this->fields[]='`pm_'.$item.'`.`meta_value` as `'.$item.'`';
+				$this->joins[]='left join `wp_postmeta` `pm_'.$field.'` on (`pm_'.$field.'`.`post_id`=`wp_posts`.`ID` AND `pm_'.$field.'`.`meta_key`="_'.$field.'")';
 				$this->where[]='(pm_'.$item.'.meta_value'.$action.'"'.$value.'")';
 				return $this;
 			}

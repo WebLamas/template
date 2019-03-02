@@ -104,8 +104,9 @@ class WeblamasOptions_parent{
 		return false;
 	}
 	public function save_meta($post_id){
-		if(!empty($_POST['meta_tags'])&&is_array($_POST['meta_tags']))
+		if(!empty($_POST['meta_tags'])&&is_array($_POST['meta_tags'])){
 		$my_data=serialize($_POST['meta_tags']);
+		}
 		update_post_meta( $post_id, '_meta_tags', $my_data );
 	}
 	
@@ -203,7 +204,7 @@ class WeblamasOptions_parent{
 
 
 
-
+/*
 // ADD FIELD TO CATEGORY TERM PAGE
 add_action( 'services_cat_add_form_fields', '___add_form_field_term_meta_text' );
 function ___add_form_field_term_meta_text() { ?>
@@ -271,7 +272,8 @@ function ___save_term_meta_text( $term_id ) {
 	update_term_meta( $term_id, 'main_desc', $_POST['main_desc'] );
 	}
 }
-
+*/
+/*
 add_action('wp_print_styles', function(){
 	global $wp_styles;
 	$styles=array();
@@ -288,7 +290,9 @@ add_action('wp_print_styles', function(){
 			$file=get_home_path().$file;
 			$mincss_s=file_get_contents($file);
 			//$mincss_s=mb_substr($mincss_s,0,500);
-			$mincss_dir=pathinfo($file)["dirname"];
+// ================= здесь я разбил не два действия  =================================
+			$tmp = pathinfo($file);
+			$mincss_dir=$tmp["dirname"];
 			$mincss_dir=str_replace(get_home_path(),'',$mincss_dir).'/';
 			$mincss_s=str_replace("url(","url(".$mincss_dir,$mincss_s);
 			$mincss_s=str_replace("url(".$mincss_dir."data:image","url(data:image",$mincss_s);
@@ -311,3 +315,4 @@ add_action('wp_print_styles', function(){
 			}
 	echo '<style>'.implode($echo).'</style>';
 }, 100);
+*/

@@ -47,6 +47,12 @@ abstract class WeblamasCustomPost{
 			$post['desc']['description']=$post['description'];
 		}
 		$post=$post['desc'];
+		foreach($post as $k=>$v){
+			$v=str_replace('\\\\','\\',$v);
+			$v=str_replace('\\\\','\\',$v);
+			$post[$k]=str_replace('\\\\','\\',$v);
+			$post[$k]=str_replace('\"','"',$v);
+		}
 		update_option('archivedesc_'.static::$name,serialize($post));
 		}
 	public function addarchivedescription(){
@@ -62,11 +68,11 @@ abstract class WeblamasCustomPost{
 		
 		echo '<h1 class="wp-heading-inline">Описание для архива '.$lang.'</h1>';
 		echo '<div><label>Тайтл '.$lang.'</label></div>';
-		echo '<div><input type="text" name="desc'.$lang.'[title]" value="'.$value['title'].'"></div>';
+		echo '<div><input type="text" name="desc'.$lang.'[title]" value="'.htmlspecialchars($value['title']).'"></div>';
 		echo '<div><label>Заголовок '.$lang.'</label></div>';
-		echo '<div><input type="text" name="desc'.$lang.'[h1]" value="'.$value['h1'].'"></div>';
+		echo '<div><input type="text" name="desc'.$lang.'[h1]" value="'.htmlspecialchars($value['h1']).'"></div>';
 		echo '<div><label>Мета ключи '.$lang.'</label></div>';
-		echo '<div><input type="text" name="desc'.$lang.'[meta_keys]" value="'.$value['meta_keys'].'"></div>';
+		echo '<div><input type="text" name="desc'.$lang.'[meta_keys]" value="'.htmlspecialchars($value['meta_keys']).'"></div>';
 		echo '<div><label>Мета описание '.$lang.'</label></div>';
 		echo '<div><textarea name="desc'.$lang.'[meta_desc]">'.$value['meta_desc'].'</textarea></div>';
 		echo '<div><label>Описание '.$lang.'</label></div>';
@@ -128,7 +134,7 @@ abstract class WeblamasCustomPost{
 		return $args;
 		
 	}
-	public function catArgs(){
+	public static function catArgs(){
 		return array();
 	}
 
