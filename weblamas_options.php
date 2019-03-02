@@ -163,28 +163,43 @@ class WeblamasOptions_parent{
 		?>
 		<div class="wrap">
 		<h2><?php _e('Добавить данные'); ?></h2>
-			<form method="post">
-				<table class="form-table">
+			<form method="post" class="weblamasoptions">
 					<?php foreach($this->getParams() as $par):?>
-					<tr valign="top">
-						<th scope="row"><?php echo $par['title']; ?></th>
-						<td>
-						<?php if(empty($par['type'])||$par['type']=='text'):?>
-						<input class="regular-text" type="text" name="<?php echo $par['name']?>" value="<?php echo self::getValue($par['name'])?>"/>
-						<?php elseif($par['type']=='textarea'):?>
-								<textarea class="regular-text" name="<?php echo $par['name']?>"><?php echo self::getValue($par['name'])?></textarea>
+					<?php if($par['type']=='group'):?>
+						<fieldset style="border:1px solid black;padding:10px">
+						<legend><?php echo $par['title'];?></legend>
+						<?php foreach($par['fields']as $field):?>
+							<div>
+								<label><?php echo $field['title']; ?></label>
+								<div>
+								<?php FieldRenderer::render($field,$field['name'],self::getValue($field['name']));?>
+								</div>
+							</div>
+						<?php endforeach;?>
+						</fieldset>
 						<?php else:?>
-							неизвестный тип
-						<?php endif;?>
+					<div>
+						<label><?php echo $par['title']; ?></label>
+						<div>
+						<?php FieldRenderer::render($par,$par['name'],self::getValue($par['name']));?>
 						
-						
-						</td>
-					</tr>
+						</div>
+					</div>
+					<?php endif;?>
 					<?php endforeach;?>
 					<input type="hidden" name="action" value="save" />
 				</table>
 				<?php submit_button(); ?>
 			</form>
+			<style>
+			.weblamasoptions input{
+				width:100%;
+			}
+			.weblamasoptions textarea{
+				width:100%;
+				height:50px;
+			}
+			</style>
 
 </div>
 <?
@@ -192,7 +207,13 @@ class WeblamasOptions_parent{
 	public function save_options(){
 		if($_POST['action']=='save'&& $_REQUEST['page']=='weblamasoptions'){
 			foreach($this->getParams() as $par){
+				if($par['type']=='group'){
+					foreach($par['fields'] as $fld){
+						self::$options[$fld['name']]=$_POST[$fld['name']];
+					}
+				}else{
 				self::$options[$par['name']]=$_POST[$par['name']];
+			}
 			}
 			update_option('weblamas_options',json_encode(self::$options));
 		}

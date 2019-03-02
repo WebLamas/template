@@ -72,7 +72,6 @@ abstract class WeblamasCustomPost{
 		echo '<div><label>Заголовок '.$lang.'</label></div>';
 		echo '<div><input type="text" name="desc'.$lang.'[h1]" value="'.htmlspecialchars($value['h1']).'"></div>';
 		echo '<div><label>Мета ключи '.$lang.'</label></div>';
-		echo '<div><input type="text" name="desc'.$lang.'[meta_keys]" value="'.htmlspecialchars($value['meta_keys']).'"></div>';
 		echo '<div><label>Мета описание '.$lang.'</label></div>';
 		echo '<div><textarea name="desc'.$lang.'[meta_desc]">'.$value['meta_desc'].'</textarea></div>';
 		echo '<div><label>Описание '.$lang.'</label></div>';
