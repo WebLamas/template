@@ -6,6 +6,9 @@ Class FieldRenderer{
 			$cats=get_terms($field['taxonomy'],array('hide_empty'=>false));	
 			$field['type']='select';	
 			$field['options']=array();	
+			if($field['canempty']){
+				$field['options'][0]='Без категории';
+			}
 			foreach($cats as $cat){	
 				$field['options'][$cat->term_id]=$cat->name;	
 			}	
@@ -23,7 +26,14 @@ Class FieldRenderer{
 			$name=str_replace(']','_',$name);
 			wp_editor($field_value, $name, $settings = array('textarea_name'=>$field_name,'quicktags'=>true) );
 		}elseif($field['type']=='text'){
-			echo '<input type="text" name="'.$field_name.'" value="'.$field_value.'">';
+			echo '<input type="text" name="'.$field_name.'" value="'.htmlspecialchars($field_value).'" list="data_'.$field_name.'">';
+			if(!empty($field['options'])){
+				echo '<datalist id="data_'.$field_name.'">';
+				foreach($field['options'] as $fo){
+					echo '<option value="'.$fo.'"></option>';
+				}
+				echo '</datalist>'; 
+			}
 		}elseif($field['type']=='date'){
 			echo '<input type="date" name="'.$field_name.'" value="'.$field_value.'">';
 		}elseif($field['type']=='textarea'){
@@ -44,7 +54,7 @@ Class FieldRenderer{
 			if(empty($field_value)){
 				$field_value=base64_encode('{"lat": 55.75583, "lng": 37.61778}');
 			}
-			echo '<script>
+			echo '<div><script>
 			function base64_encode( data ) {    // Encodes data with MIME base64
 				var b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 				var o1, o2, o3, h1, h2, h3, h4, bits, i=0, enc="";
@@ -74,7 +84,7 @@ Class FieldRenderer{
 			
 			var location=JSON.parse(\''.base64_decode($field_value).'\');
 			  var map = new google.maps.Map(document.getElementById("map"), {
-				zoom: 4,
+				zoom: 12,
 				center: location
 			  });
 			  console.log(document.getElementById("coords").value);

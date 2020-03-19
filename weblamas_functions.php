@@ -1,10 +1,14 @@
 <?php 
 class WeblamasTemplate{
-	public function showTemplates($templates){
-		var_dump($templates);
+	public static $templates=array();
+	public static function addTemplate($template){
+		$templates=self::get_subtemplates();
+		$templates[]=$template.'.php';
+		self::$templates=$templates;
 	}
 	
-	public static function loadTemplate($templates){
+	public static function loadTemplate($templates=array()){
+		$templates=self::get_subtemplates();
 		foreach(array_reverse($templates) as $t){
 			$f=get_stylesheet_directory().'/html/'.$t;
 			if(file_exists($f)){
@@ -14,6 +18,7 @@ class WeblamasTemplate{
 		}
 	}
 	public static function get_subtemplates(){
+		if(empty(self::$templates)){
 		$templates = array();
 		if ( is_embed()          && $templates = self::get_embed_template($templates)          ) ;
 		if ( is_404()            && $templates = self::get_404_template($templates)            ) ;
@@ -32,7 +37,9 @@ class WeblamasTemplate{
 		if ( is_date()           && $templates = self::get_date_template($templates)           ) ;
 		if ( is_archive()        && $templates = self::get_archive_template($templates)        ) ;
 		$templates = self::get_index_template($templates);
-		return $templates;
+			self::$templates=$templates;
+			}
+		return self::$templates;
 	}
 
 	function get_index_template($templates) {

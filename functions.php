@@ -1,5 +1,6 @@
 <?php 
-include('weblamas_functions.php');
+require_once('weblamas_functions.php');
+require_once('weblamas_options.php');
 require_once('query.php');
 require_once('fields.php');
 require_once('custom_post.php');
@@ -11,8 +12,6 @@ add_filter( 'wp_calculate_image_srcset_meta', '__return_null' );
 add_action('init', function(){
     if (!is_admin()) {
         wp_deregister_script('jquery');
-//        wp_register_script('jquery',get_template_directory_uri() . '/js/jquery-3.1.1.min.js', false, '3.1.1',true);
-//        wp_enqueue_script('jquery');
     }
 });
 
@@ -51,3 +50,24 @@ function wpcf7_submitwl_form_tag_handler( $tag ) {
 
 	return $html;
 }
+
+
+//---------------------  добавление мелких изменений ----------------------- 
+remove_action('welcome_panel', 'wp_welcome_panel');
+//------------------------------------------------------------------------------- 
+function remove_footer_admin() {echo '<p>&copy; <a href="http://weblamas.com/" target="_blank">WebLamas</a> '.date('Y').'.</p>';}
+add_filter('admin_footer_text', 'remove_footer_admin');
+
+function disable_emojis() {
+	remove_action( 'wp_head', 'print_emoji_detection_script', 7 );
+	remove_action( 'admin_print_scripts', 'print_emoji_detection_script' );
+	remove_action( 'wp_print_styles', 'print_emoji_styles' );
+	remove_action( 'admin_print_styles', 'print_emoji_styles' );	
+	remove_filter( 'the_content_feed', 'wp_staticize_emoji' );
+	remove_filter( 'comment_text_rss', 'wp_staticize_emoji' );	
+	remove_filter( 'wp_mail', 'wp_staticize_emoji_for_email' );
+	
+	// Remove from TinyMCE
+	//add_filter( 'tiny_mce_plugins', 'disable_emojis_tinymce' );
+}
+add_action( 'init', 'disable_emojis' );

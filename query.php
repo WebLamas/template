@@ -25,7 +25,7 @@ class Query{
 		}
 		$params=array_unique($params);
 		foreach($params as $k=>$field){
-			if(in_array($field,array('post_content','post_title','ID','post_status','post_name','post_excerpt'))){
+			if(in_array($field,array('post_content','post_title','ID','post_status','post_name','post_excerpt','post_parent','menu_order'))){
 				$this->fields[]=$field;
 				unset($params[$k]);
 				continue;
@@ -67,14 +67,14 @@ class Query{
 		return $this;
 	}
 	public function where($item, $value, $action = '='){ 
-		if(in_array($item,array('post_content','post_title','ID','post_status'))){
+		if(in_array($item,array('post_content','post_title','ID','post_status','post_date','post_parent'))){
 			$this->where[]='('.$item.$action.'"'.$value.'")';
 			return $this;
 		}
 		foreach($this->post_fields as $pf){
 			if($pf['name']==$item){
 				$this->fields[]='`pm_'.$item.'`.`meta_value` as `'.$item.'`';
-				$this->joins[]='left join `wp_postmeta` `pm_'.$field.'` on (`pm_'.$field.'`.`post_id`=`wp_posts`.`ID` AND `pm_'.$field.'`.`meta_key`="_'.$field.'")';
+				$this->joins[]='left join `wp_postmeta` `pm_'.$item.'` on (`pm_'.$item.'`.`post_id`=`wp_posts`.`ID` AND `pm_'.$item.'`.`meta_key`="_'.$item.'")';
 				$this->where[]='(pm_'.$item.'.meta_value'.$action.'"'.$value.'")';
 				return $this;
 			}
@@ -83,6 +83,15 @@ class Query{
 		var_dump($item);
 		var_dump($this->post_fields);
 		}
+	public function whereIn($item,$vals){
+		if(in_array($item,array('ID'))){
+			$this->where[]='('.$item.' in ('.implode(',',$vals).'))';
+			return $this;
+		}
+		var_dump('unknown wherin');
+		var_dump($item);
+		var_dump($this->post_fields);
+	}
 	public function limit($limit,$offset=0){
 		$this->limit=$offset.','.$limit;
 		return $this;
@@ -153,19 +162,25 @@ class Query{
 				if(!empty($thumbnails[$v['thumbnail_id']])){
 					
 					$th=maybe_unserialize($thumbnails[$v['thumbnail_id']]);
+					if(empty($th['file'])){
+						$th['file']=$wpdb->get_var('select meta_value from '.$wpdb->postmeta.' where meta_key="_wp_attached_file" and post_id='.$v['thumbnail_id']);
+					}
 					foreach($this->image_sizes as $size){
 						if(!empty($th['sizes'][$size])){
-							
-							$v['thumbnail_'.$size]=$upload_dir['baseurl'].'/'.pathinfo($th['file'],PATHINFO_DIRNAME).'/'.$th['sizes'][$size]['file'];
+							// формируем картинку, чтобы применить фильтры
+							$image=[$upload_dir['baseurl'].'/'.pathinfo($th['file'],PATHINFO_DIRNAME).'/'.$th['sizes'][$size]['file'],$th['sizes'][$size]['width'],$th['sizes'][$size]['height']];
+							$image=apply_filters('wp_get_attachment_image_src',$image,$v['thumbnail_id'],$size,false);
+							$v['thumbnail_'.$size]=$image[0];
 						}
 					}
-					$v['thumbnail']=$upload_dir['baseurl'].'/'.$th['file'];
+					// формируем картинку, чтобы применить фильтры
+					$image=[$upload_dir['baseurl'].'/'.$th['file'],$th['width'],$th['height']];
+					$image=apply_filters('wp_get_attachment_image_src',$image,$v['thumbnail_id'],'full',false);
+					$v['thumbnail']=$image[0];
 					$result[$k]=$v;
 				}
 			}
 		}
-		
-		//var_dump($result);
 		return $result;
 	}
 	public function first(){

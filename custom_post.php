@@ -37,7 +37,7 @@ abstract class WeblamasCustomPost{
 	public static function customFields(){return array();}
 	public static function archivedescription_save(){
 		if($_REQUEST['page']!=static::$name . '-description' or  $_POST['action']!='save')return;
-		$post=$_POST;
+		$post=array_map('stripslashes_deep',$_POST);
 		if(function_exists('pll_languages_list')){
 			foreach(pll_languages_list() as $lang){
 				$post['desc'][$lang]['description']=$post['description'][$lang];
@@ -47,20 +47,16 @@ abstract class WeblamasCustomPost{
 			$post['desc']['description']=$post['description'];
 		}
 		$post=$post['desc'];
-		foreach($post as $k=>$v){
-			$v=str_replace('\\\\','\\',$v);
-			$v=str_replace('\\\\','\\',$v);
-			$post[$k]=str_replace('\\\\','\\',$v);
-			$post[$k]=str_replace('\"','"',$v);
-		}
-		update_option('archivedesc_'.static::$name,serialize($post));
+		//var_dump($post);
+		//die();
+		update_option('archivedesc_'.static::$name,base64_encode(serialize($post)));
 		}
 	public function addarchivedescription(){
 		add_submenu_page('edit.php?post_type=' . static::$name,"Описание для архива","Описание для архива",'edit_posts',static::$name . '-description',array(get_called_class(),'archivedescription'));	
 	}
 	public function archivedescription_fields($lang=''){
 		$value=get_option('archivedesc_'.static::$name);
-		$value=unserialize($value);
+		$value=unserialize(base64_decode($value));
 		if(!empty($lang)){
 			$value=$value[$lang];
 			$lang='['.$lang.']';
@@ -71,7 +67,6 @@ abstract class WeblamasCustomPost{
 		echo '<div><input type="text" name="desc'.$lang.'[title]" value="'.htmlspecialchars($value['title']).'"></div>';
 		echo '<div><label>Заголовок '.$lang.'</label></div>';
 		echo '<div><input type="text" name="desc'.$lang.'[h1]" value="'.htmlspecialchars($value['h1']).'"></div>';
-		echo '<div><label>Мета ключи '.$lang.'</label></div>';
 		echo '<div><label>Мета описание '.$lang.'</label></div>';
 		echo '<div><textarea name="desc'.$lang.'[meta_desc]">'.$value['meta_desc'].'</textarea></div>';
 		echo '<div><label>Описание '.$lang.'</label></div>';
@@ -230,7 +225,10 @@ abstract class WeblamasCustomPost{
 	public function modify_field($field,$field_value){
 		if($field['type']=='json'){
 			if(is_array($field_value)){
-				$field_value=base64_encode(serialize(array_filter($field_value)));
+				$field_value=array_map(function($item){
+					return str_replace('\"','"',$item);
+				},array_filter($field_value));
+				$field_value=base64_encode(serialize($field_value));
 			}else{
 				$field_value=base64_encode(serialize(array()));
 			}

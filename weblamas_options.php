@@ -47,7 +47,17 @@ class WeblamasOptions_parent{
 	}
 
 	public function add_meta_tags(){
-		if(is_single()||is_page()){
+		if(is_home()){
+			$field_value=get_post_meta( get_option( 'page_for_posts' ), '_meta_tags', true );
+			if(empty($field_value)){
+				$field_value=array();
+			}else{
+				$field_value=unserialize($field_value);
+			}
+			if(empty($field_value['title'])){
+				$field_value['title']==get_the_title();
+			}
+		}elseif(is_single()||is_page()){
 			$field_value=get_post_meta( get_the_ID(), '_meta_tags', true );
 			if(empty($field_value)){
 				$field_value=array();
@@ -55,16 +65,14 @@ class WeblamasOptions_parent{
 				$field_value=unserialize($field_value);
 			}
 
-			if(!empty($field_value['description'])){
-				echo '<meta name="description" content="'.strip_tags($field_value['description']).'">'.PHP_EOL;
+			if(empty($field_value['title'])){
+				$field_value['title']=get_queried_object()->post_title;
 			}
-			if(!empty($field_value['title'])){
-				echo '<title>'.strip_tags($field_value['title']).'</title>';
-			}else{
-				echo '<title>'.strip_tags(get_the_title()).'</title>';
-				}
-			return true;
+		}elseif(is_author()){
+			$field_value['title']=get_queried_object()->display_name;
 		}elseif(is_tax()||is_category()||is_tag()){
+			//$page=absint( get_query_var( 'paged' ) );
+			
 			$field_value=get_term_meta(get_queried_object()->term_id,'_meta_tags',true);
 			if(empty($field_value)){
 				$field_value=array();
@@ -72,36 +80,35 @@ class WeblamasOptions_parent{
 				$field_value=unserialize($field_value);
 			}
 
-			if(!empty($field_value['description'])){
-				echo '<meta name="description" content="'.strip_tags($field_value['description']).'">'.PHP_EOL;
-			}
-			if(!empty($field_value['title'])){
-				echo '<title>'.strip_tags($field_value['title']).'</title>';
-			}else{
-				echo '<title>'.strip_tags(get_queried_object()->name).'</title>';
+			if(empty($field_value['title'])){
+				$field_value['title']=get_queried_object()->name;
 				}
-			return true;
-		}elseif(is_author()){
-				echo '<title>'.strip_tags(get_queried_object()->display_name).'</title>';
 		}elseif(is_post_type_archive()){ 
 			$field_value=get_option('archivedesc_'.get_queried_object()->name);
-			if(empty($field_value))return;
-			$field_value=unserialize($field_value);
+			$field_value=unserialize(base64_decode($field_value));
 			if(function_exists('pll_current_language')){
 				$field_value=$field_value[pll_current_language()];
 			}
-			if(!empty($field_value['meta_desc'])){
-				echo '<meta name="description" content="'.strip_tags($field_value['meta_desc']).'">'.PHP_EOL;
+			if(empty($field_value['title'])){
+				if(!empty($field_value['h1'])){
+					$field_value['title']=$field_value['h1'];
+				}else{
+					$field_value['title']=get_queried_object()->label;
+				}
+			}
+			
+			
+		}elseif(is_404()){
+			$field_value['title']='404';
 			}
 			if(!empty($field_value['title'])){
 				echo '<title>'.strip_tags($field_value['title']).'</title>';
-			}elseif(!empty($field_value['h1'])){
-				echo '<title>'.strip_tags($field_value['h1']).'</title>';
-			}else{
-				echo '<title>'.strip_tags(get_queried_object()->label).'</title>';
 				}
+		if(!empty($field_value['description'])){
+			echo '<meta name="description" content="'.strip_tags($field_value['description']).'">'.PHP_EOL;
 			}
-		return false;
+	
+		return true;
 	}
 	public function save_meta($post_id){
 		if(!empty($_POST['meta_tags'])&&is_array($_POST['meta_tags'])){
