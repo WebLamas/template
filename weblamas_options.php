@@ -47,6 +47,7 @@ class WeblamasOptions_parent{
 	}
 
 	public function add_meta_tags(){
+		echo '<meta charset="UTF-8"><meta name="viewport" content="width=device-width">';
 		if(is_home()){
 			$field_value=get_post_meta( get_option( 'page_for_posts' ), '_meta_tags', true );
 			if(empty($field_value)){
