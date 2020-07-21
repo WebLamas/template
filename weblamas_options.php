@@ -157,7 +157,7 @@ class WeblamasOptions_parent{
 	}
 	public function formatValue($name,$format=''){
 		$val=self::getValue($name);
-		if($format=='phone'){
+		if(in_array($format,['phone','tel'])){
 			$arr = array('(',')',' ','-');
 			$val=str_replace($arr,'',$val);
 		}elseif(!empty($format)){

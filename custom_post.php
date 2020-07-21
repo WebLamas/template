@@ -111,7 +111,7 @@ abstract class WeblamasCustomPost{
 		return $link;
 		}
 
-	public function populateArgs($args){
+	public static function populateArgs($args){
 		$q=array(      
 			'public' => true,
 			'show_ui'  => true,
@@ -132,14 +132,14 @@ abstract class WeblamasCustomPost{
 		return array();
 	}
 
-	public function createposttype(){
+	public static function createposttype(){
 		register_post_type( static::$name,static::populateArgs(static::getArgs()));
 		$cargs=static::catArgs();
 		if(!empty($cargs)){
 			register_taxonomy( static::$name.'_cat', static::$name, $cargs );
 		}
 	}
-	public function add_meta_box(){
+	public static function add_meta_box(){
 		$where='side';	
 		if(!empty(static::$position)){	
 			$where=static::$position;	
@@ -152,7 +152,7 @@ abstract class WeblamasCustomPost{
 				$where
 				);
 	}
-	function meta_box_callback( $post ) {
+	public static function meta_box_callback( $post ) {
 		wp_nonce_field( static::$name.'_save_meta_box_data', static::$name.'_meta_box_nonce' );
 		foreach(static::customFields() as $fieldm){
 			$field_value=get_post_meta( $post->ID, '_'.$fieldm['name'], true );
@@ -179,7 +179,10 @@ abstract class WeblamasCustomPost{
 				foreach($multiple_field_value as $k=>$row){
 					echo '<div class="item" data-counter="'.$k.'">';
 					foreach($fieldm['fields'] as $field){
-						echo '<div><label for="'.$field['name'].'['.$k.']['.$field['name'].']">'.$field['label'].'</label></div><div>';
+						if(!empty($field['label'])){
+							echo '<div><label for="'.$field['name'].'['.$k.']['.$field['name'].']">'.$field['label'].'</label></div>';
+						}
+						echo '<div>';
 						FieldRenderer::render($field,$fieldm['name'].'['.$k.']['.$field['name'].']',$row[$field['name']]);
 						echo '</div>';
 					}
@@ -216,7 +219,10 @@ abstract class WeblamasCustomPost{
 				</script>
 				<?php
 			}else{
-				echo '<div><label for="'.$fieldm['name'].'">'.$fieldm['label'].'</label></div><div>';
+				if(!empty($fieldm['label'])){
+					echo '<div><label for="'.$fieldm['name'].'">'.$fieldm['label'].'</label></div>';
+				}
+				echo '<div>';
 				FieldRenderer::render($fieldm,$fieldm['name'],$field_value);
 				echo '</div>';
 			}

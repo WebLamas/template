@@ -42,15 +42,15 @@ class WeblamasTemplate{
 		return self::$templates;
 	}
 
-	function get_index_template($templates) {
+	public static function get_index_template($templates) {
 		array_unshift($templates,'index.php');
 		return $templates;
 	}
-	function get_404_template($templates) {
+	public static function get_404_template($templates) {
 		array_unshift($templates,'404.php');
 		return $templates;
 	}
-	function get_archive_template($templates) {
+	public static function get_archive_template($templates) {
 		$post_types = array_filter( (array) get_query_var( 'post_type' ) );
 
 		if ( count( $post_types ) == 1 ) {
@@ -60,7 +60,7 @@ class WeblamasTemplate{
 		array_unshift($templates,'archive.php');
 		return $templates;
 	}
-	function get_post_type_archive_template($templates) {
+	public static function get_post_type_archive_template($templates) {
 		$post_type = get_query_var( 'post_type' );
 		if ( is_array( $post_type ) )
 			$post_type = reset( $post_type );
@@ -70,7 +70,7 @@ class WeblamasTemplate{
 			return $templates;
 		return self::get_archive_template($templates);
 	}
-	function get_author_template($templates) {
+	public static function get_author_template($templates) {
 		$author = get_queried_object();
 
 		if ( $author instanceof WP_User ) {
@@ -82,7 +82,7 @@ class WeblamasTemplate{
 		return $templates;
 	}
 
-	function get_category_template($templates) {
+	public static function get_category_template($templates) {
 		$category = get_queried_object();
 
 		$templates = array();
@@ -103,7 +103,7 @@ class WeblamasTemplate{
 		return $templates;
 	}
 
-	function get_tag_template($templates) {
+	public static function get_tag_template($templates) {
 		$tag = get_queried_object();
 
 
@@ -122,7 +122,7 @@ class WeblamasTemplate{
 		return $templates;
 	}
 
-	function get_taxonomy_template($templates) {
+	public static function get_taxonomy_template($templates) {
 		$term = get_queried_object();
 
 		if ( ! empty( $term->slug ) ) {
@@ -141,24 +141,24 @@ class WeblamasTemplate{
 		return $templates;
 	}
 
-	function get_date_template($templates) {
+	public static function get_date_template($templates) {
 		array_unshift($templates,'date.php');
 		return $templates;
 	}
 
-	function get_home_template($templates) {
+	public static function get_home_template($templates) {
 		array_unshift($templates, 'index.php','home.php' );
 		
 		return $templates ;
 	}
 
-	function get_front_page_template($templates) {
+	public static function get_front_page_template($templates) {
 		array_unshift($templates,'front-page.php');
 
 		return $templates;
 	}
 
-	function get_page_template($templates) {
+	public static function get_page_template($templates) {
 		$id = get_queried_object_id();
 		$template = get_page_template_slug();
 		$pagename = get_query_var('pagename');
@@ -185,11 +185,11 @@ class WeblamasTemplate{
 
 		return $templates;
 	}
-	function get_search_template($templates) {
+	public static function get_search_template($templates) {
 		array_unshift($templates,'search.php');
 		return $templates;
 	}
-	function get_single_template($templates) {
+	public static function get_single_template($templates) {
 		$object = get_queried_object();
 
 
@@ -213,7 +213,7 @@ class WeblamasTemplate{
 		return $templates;
 	}
 
-	function get_embed_template($templates) {
+	public static function get_embed_template($templates) {
 		$object = get_queried_object();
 
 
@@ -229,11 +229,11 @@ class WeblamasTemplate{
 
 		return $templates;
 	}
-	function get_singular_template($templates) {
+	public static function get_singular_template($templates) {
 		array_unshift($templates,'singular.php');
 		return $templates;
 	}
-	function get_attachment_template($templates) {
+	public static function get_attachment_template($templates) {
 		$attachment = get_queried_object();
 
 		if ( $attachment ) {

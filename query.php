@@ -56,7 +56,8 @@ class Query{
 		if(empty($params)) return $this;
 		
 		if(!empty($params)){
-			var_dump('error field');
+			var_dump('error field'.json_encode($params));
+			var_dump($this->post_fields);
 			return $this;
 		}
 		if(empty($params)) return $this;

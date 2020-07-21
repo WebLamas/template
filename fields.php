@@ -1,7 +1,7 @@
 <?php
 
 Class FieldRenderer{
-	public function render($field,$field_name,$field_value){
+	public static function render($field,$field_name,$field_value){
 		if($field['type']=='taxonomy'){	
 			$cats=get_terms($field['taxonomy'],array('hide_empty'=>false));	
 			$field['type']='select';	
@@ -21,6 +21,8 @@ Class FieldRenderer{
 		
 		if($field['type']=='checkbox'){
 			echo '<input type="checkbox" name="'.$field_name.'" '.(!empty($field_value)?'checked':'').'>';
+		}elseif($field['type']=='simple_checkbox'){
+			echo '<label><input type="checkbox" name="'.$field_name.'" '.(!empty($field_value)?'checked':'').'>'.$field['simple_label'].'</label>';
 		}elseif($field['type']=='editor'){
 			$name=str_replace('[','_',$field_name);
 			$name=str_replace(']','_',$name);
