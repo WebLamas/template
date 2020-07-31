@@ -35,52 +35,42 @@ abstract class WeblamasCustomPost{
 	public static function custom_columns($column,$post_id){return '';}
 	public static function add_columns($columns){return $columns;}
 	public static function customFields(){return array();}
+	public static function multipleDescriptions(){
+			return apply_filters('wlcp_multiple_descriptions',['default'=>'']);//wlcp=WebLamasCustomPost
+		}
 	public static function archivedescription_save(){
+		if(empty($_REQUEST['page'])||empty($_POST['action']))return;
 		if($_REQUEST['page']!=static::$name . '-description' or  $_POST['action']!='save')return;
 		$post=array_map('stripslashes_deep',$_POST);
-		if(function_exists('pll_languages_list')){
-			foreach(pll_languages_list() as $lang){
-				$post['desc'][$lang]['description']=$post['description'][$lang];
-			}
-		}
-		else{
-			$post['desc']['description']=$post['description'];
+		foreach(static::multipleDescriptions() as $variant=>$desc_title){
+			$post['desc'][$variant]['description']=$post['description__'.$variant];
 		}
 		$post=$post['desc'];
-		//var_dump($post);
-		//die();
 		update_option('archivedesc_'.static::$name,base64_encode(serialize($post)));
 		}
-	public function addarchivedescription(){
+	public static function addarchivedescription(){
 		add_submenu_page('edit.php?post_type=' . static::$name,"Описание для архива","Описание для архива",'edit_posts',static::$name . '-description',array(get_called_class(),'archivedescription'));	
 	}
-	public function archivedescription_fields($lang=''){
+	public static function archivedescriptionFields($variant='',$title=''){
 		$value=get_option('archivedesc_'.static::$name);
 		$value=unserialize(base64_decode($value));
-		if(!empty($lang)){
-			$value=$value[$lang];
-			$lang='['.$lang.']';
+		$value=$value[$variant];
+		$editor_name='description__'.$variant;
+		echo '<h1 class="wp-heading-inline">Описание для архива '.$title.'</h1>';
+		echo '<div><label>Тайтл '.$title.'</label></div>';
+		echo '<div><input type="text" name="desc['.$variant.'][title]" value="'.htmlspecialchars($value['title']).'"></div>';
+		echo '<div><label>Заголовок (h1) '.$title.'</label></div>';
+		echo '<div><input type="text" name="desc['.$variant.'][h1]" value="'.htmlspecialchars($value['h1']).'"></div>';
+		echo '<div><label>Мета описание '.$title.'</label></div>';
+		echo '<div><textarea name="desc['.$variant.'][meta_desc]">'.$value['meta_desc'].'</textarea></div>';
+		echo '<div><label>Описание '.$title.'</label></div>';
+		wp_editor($value['description'],'description__'.$variant);
 		}
-		
-		echo '<h1 class="wp-heading-inline">Описание для архива '.$lang.'</h1>';
-		echo '<div><label>Тайтл '.$lang.'</label></div>';
-		echo '<div><input type="text" name="desc'.$lang.'[title]" value="'.htmlspecialchars($value['title']).'"></div>';
-		echo '<div><label>Заголовок '.$lang.'</label></div>';
-		echo '<div><input type="text" name="desc'.$lang.'[h1]" value="'.htmlspecialchars($value['h1']).'"></div>';
-		echo '<div><label>Мета описание '.$lang.'</label></div>';
-		echo '<div><textarea name="desc'.$lang.'[meta_desc]">'.$value['meta_desc'].'</textarea></div>';
-		echo '<div><label>Описание '.$lang.'</label></div>';
-		wp_editor($value['description'],'description'.$lang);
-		}
-	public function archivedescription(){
+	public static function archivedescription(){
 		echo '<div class="wrap">';
 		echo '<form method="post">';
-		if(function_exists('pll_languages_list')){
-		foreach(pll_languages_list() as $lang){
-			static::archivedescription_fields($lang);
-			}
-		}else{
-			static::archivedescription_fields($lang);
+		foreach(static::multipleDescriptions() as $variant=>$desc_title){
+			static::archivedescriptionFields($variant,$desc_title);
 		}
 		echo '<button name="action" value="save">Сохранить</button>';
 		echo '</form>';
@@ -164,7 +154,7 @@ abstract class WeblamasCustomPost{
 					}
 				foreach($fieldm['fields'] as $field){
 					echo '<div><label for="'.$fieldm['name'].'['.$field['name'].']'.'">'.$field['label'].'</label></div><div>';
-					FieldRenderer::render($field,$fieldm['name'].'['.$field['name'].']',$json_field_value[$field['name']]);
+					FieldRenderer::render($field,$fieldm['name'].'['.$field['name'].']',!empty($json_field_value[$field['name']])?$json_field_value[$field['name']]:'');
 					echo '</div>';
 				}
 				
@@ -259,7 +249,7 @@ abstract class WeblamasCustomPost{
 		}
 		return $field_value;
 	}
-	public function save( $post_id ) {
+	public static function save( $post_id ) {
 		if(empty($_POST['post_type']))return;
 		if($_POST['post_type']!=static::$name) return;
 		if ( ! isset( $_POST[static::$name.'_meta_box_nonce'] ) )return;

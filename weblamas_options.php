@@ -102,6 +102,8 @@ class WeblamasOptions_parent{
 		}elseif(is_404()){
 			$field_value['title']='404';
 			}
+		//var_dump($field_value);
+		$field_value=apply_filters('wl_meta_fields',$field_value);
 			if(!empty($field_value['title'])){
 				echo '<title>'.strip_tags($field_value['title']).'</title>';
 				}
@@ -114,8 +116,9 @@ class WeblamasOptions_parent{
 	public function save_meta($post_id){
 		if(!empty($_POST['meta_tags'])&&is_array($_POST['meta_tags'])){
 		$my_data=serialize($_POST['meta_tags']);
-		}
 		update_post_meta( $post_id, '_meta_tags', $my_data );
+		}
+	
 	}
 	
 	public function meta_metabox(){
@@ -140,14 +143,16 @@ class WeblamasOptions_parent{
 	public function menupage(){
 		$par=$this->getParams();
 		if(!empty($par)){
-			add_menu_page('Настройки', 'Настройки', 8, 'weblamasoptions', array($this,'options_page'),'',7);
+			add_menu_page('Настройки', 'Настройки', 'edit_pages', 'weblamasoptions', array($this,'options_page'),'',7);
 			}
 	}
 	public static function getValue($name){
 		if(empty(self::$options)){
 			self::$options=json_decode(get_option('weblamas_options'),true);
 		}
-
+		if(empty(self::$options[$name])){
+			return '';
+		}
 		return self::$options[$name];
 	}
 	public function echoValue($name){
@@ -155,7 +160,7 @@ class WeblamasOptions_parent{
 		if(!empty($v))
 			echo $v;
 	}
-	public function formatValue($name,$format=''){
+	public static function formatValue($name,$format=''){
 		$val=self::getValue($name);
 		if(in_array($format,['phone','tel'])){
 			$arr = array('(',')',' ','-');
@@ -213,6 +218,7 @@ class WeblamasOptions_parent{
 <?
 	}
 	public function save_options(){
+		if(empty($_POST['action'])||empty($_REQUEST['page']))return;
 		if($_POST['action']=='save'&& $_REQUEST['page']=='weblamasoptions'){
 			foreach($this->getParams() as $par){
 				if($par['type']=='group'){

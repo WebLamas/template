@@ -10,7 +10,7 @@ add_filter( 'wp_calculate_image_srcset_meta', '__return_null' );
 
 
 add_action('init', function(){
-    if (!is_admin()) {
+    if (!is_admin()&&!($GLOBALS['pagenow'] === 'wp-login.php')) {
         wp_deregister_script('jquery');
     }
 });
