@@ -1,1 +1,0 @@
-# weblamas_template

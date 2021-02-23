@@ -26,6 +26,8 @@ class WeblamasOptions_parent{
 	}
 	public function shortcodes(){return array();}
 	public function __construct(){
+		add_filter( 'shortcode_atts_wpcf7',array($this,'title_shortcode'), 10, 3 );
+ 
 		add_action('admin_menu', array($this,'menupage'));
 		add_action('init',array($this,'save_options'));
 		add_action('add_meta_boxes', array($this,'meta_metabox')  );
@@ -45,9 +47,12 @@ class WeblamasOptions_parent{
 	public function add_jquery_footerf(){
 		echo '<script>(function($,d){$.each(readyQ,function(i,f){$(f)});$.each(bindReadyQ,function(i,f){$(d).bind("ready",f)})})(jQuery,document)</script>';
 	}
-
-	public function add_meta_tags(){
-		echo '<meta charset="UTF-8"><meta name="viewport" content="width=device-width">';
+	public function title_shortcode( $out, $pairs, $atts ) {
+		$meta=$this->get_meta();
+		$out['page_title']=$meta['title'];
+		return $out;
+	}
+	public function get_meta(){
 		if(is_home()){
 			$field_value=get_post_meta( get_option( 'page_for_posts' ), '_meta_tags', true );
 			if(empty($field_value)){
@@ -104,6 +109,13 @@ class WeblamasOptions_parent{
 			}
 		//var_dump($field_value);
 		$field_value=apply_filters('wl_meta_fields',$field_value);
+		return $field_value;
+	}
+
+
+	public function add_meta_tags(){
+		echo PHP_EOL.'<!--created by Weblamas-->'.PHP_EOL.'<meta charset="UTF-8"><meta name="viewport" content="width=device-width">';
+		$field_value=$this->get_meta();
 			if(!empty($field_value['title'])){
 				echo '<title>'.strip_tags($field_value['title']).'</title>';
 				}

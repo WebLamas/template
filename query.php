@@ -5,7 +5,8 @@ class Query{
 	public $orderby='';
 	public $apply_filters=true;
 	public $post_type='';
-	public $image_sizes=array();
+	public $thumbnail_sizes=array();
+	public $images_sizes=array();
 	public function post_type($post_type){
 		$this->where[]='(post_type="'.$post_type.'")';
 		$this->post_type=$post_type;
@@ -21,6 +22,14 @@ class Query{
 				$params[]='post_name';
 				$params[]='ID';
 				$this->fields[]='1 as link';
+			}
+		}
+		foreach($params as $k=>$field){
+			if(mb_substr($field,0,6)=='images'){
+				$this->images_sizes[]=mb_substr($field,7);
+				$params[]='ID';
+				unset($params[$k]);
+				continue;
 			}
 		}
 		$params=array_unique($params);
@@ -45,7 +54,7 @@ class Query{
 		if(empty($params)) return $this;
 		foreach($params as $k=>$field){
 			if($field=='thumbnail'||mb_substr($field,0,9)=='thumbnail'){
-				$this->image_sizes[]=mb_substr($field,10);
+				$this->thumbnail_sizes[]=mb_substr($field,10);
 				$field='thumbnail_id';
 				$this->fields[]='pm_'.$field.'.meta_value as '.$field;
 				$this->joins[]='left join `wp_postmeta` `pm_'.$field.'` on (`pm_'.$field.'`.`post_id`=`wp_posts`.`ID` AND `pm_'.$field.'`.`meta_key`="_'.$field.'")';
@@ -154,6 +163,23 @@ class Query{
 			}
 			$result[]=$rq;
 		}
+		if(!empty($this->images_sizes)){
+			//var_dump($this->images_sizes);
+			//var_dump(wp_list_pluck($result,'ID'));
+			$sql='select post_parent,menu_order,ID,'.$wpdb->postmeta.'.meta_value from wp_posts right join '.$wpdb->postmeta.' on (wp_posts.ID='.$wpdb->postmeta.'.post_id and '.$wpdb->postmeta.'.meta_key="_wp_attachment_metadata") where post_parent in ('.implode(',',wp_list_pluck($result,'ID')).') order by menu_order';
+			$img_r=$wpdb->get_results($sql,ARRAY_A);
+			$images=[];
+			foreach($img_r as $img){
+				$image=$this->metadata_to_images($img['meta_value'],$this->images_sizes,$img['ID'],'image');
+				$images[$img['post_parent']][]=$image;
+			}
+			foreach($result as $k=>$v){
+				if(!empty($images[$v['ID']])){
+					$v['images']=$images[$v['ID']];
+					$result[$k]=$v;
+				}
+			}
+		}
 		if(!empty($thumbnails_ids)){
 			$sql='select post_id,meta_value from '.$wpdb->postmeta.' where meta_key="_wp_attachment_metadata" and post_id in ('.implode(',',$thumbnails_ids).')';
 			$thumbnails=$wpdb->get_results($sql);
@@ -161,27 +187,35 @@ class Query{
 			$upload_dir=wp_upload_dir();
 			foreach($result as $k=>$v){
 				if(!empty($thumbnails[$v['thumbnail_id']])){
-					
-					$th=maybe_unserialize($thumbnails[$v['thumbnail_id']]);
-					if(empty($th['file'])){
-						$th['file']=$wpdb->get_var('select meta_value from '.$wpdb->postmeta.' where meta_key="_wp_attached_file" and post_id='.$v['thumbnail_id']);
+					$image=$this->metadata_to_images($thumbnails[$v['thumbnail_id']],$this->thumbnail_sizes,$v['thumbnail_id'],'thumbnail');
+					foreach($image as $ik=>$iv){
+						$v[$ik]=$iv;
 					}
-					foreach($this->image_sizes as $size){
-						if(!empty($th['sizes'][$size])){
-							// формируем картинку, чтобы применить фильтры
-							$image=[$upload_dir['baseurl'].'/'.pathinfo($th['file'],PATHINFO_DIRNAME).'/'.$th['sizes'][$size]['file'],$th['sizes'][$size]['width'],$th['sizes'][$size]['height']];
-							$image=apply_filters('wp_get_attachment_image_src',$image,$v['thumbnail_id'],$size,false);
-							$v['thumbnail_'.$size]=$image[0];
-						}
-					}
-					// формируем картинку, чтобы применить фильтры
-					$image=[$upload_dir['baseurl'].'/'.$th['file'],$th['width'],$th['height']];
-					$image=apply_filters('wp_get_attachment_image_src',$image,$v['thumbnail_id'],'full',false);
-					$v['thumbnail']=$image[0];
 					$result[$k]=$v;
 				}
 			}
 		}
+		return $result;
+	}
+	private function metadata_to_images($metadata,$sizes,$ID,$prefix='thumbnail'){
+		$result=[];
+		$th=maybe_unserialize($metadata);
+		$upload_dir=wp_upload_dir();
+					if(empty($th['file'])){
+			$th['file']=$wpdb->get_var('select meta_value from '.$wpdb->postmeta.' where meta_key="_wp_attached_file" and post_id='.$ID);
+					}
+		foreach($sizes as $size){
+						if(!empty($th['sizes'][$size])){
+							// формируем картинку, чтобы применить фильтры
+							$image=[$upload_dir['baseurl'].'/'.pathinfo($th['file'],PATHINFO_DIRNAME).'/'.$th['sizes'][$size]['file'],$th['sizes'][$size]['width'],$th['sizes'][$size]['height']];
+							$image=apply_filters('wp_get_attachment_image_src',$image,$v['thumbnail_id'],$size,false);
+				$result[$prefix.'_'.$size]=$image[0];
+						}
+					}
+					$image=[$upload_dir['baseurl'].'/'.$th['file'],$th['width'],$th['height']];
+					$image=apply_filters('wp_get_attachment_image_src',$image,$v['thumbnail_id'],'full',false);
+		$result[$prefix]=$image[0];
+		//$result[$k]=$v;
 		return $result;
 	}
 	public function first(){
