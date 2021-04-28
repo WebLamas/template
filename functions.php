@@ -1,9 +1,14 @@
 <?php 
+
 require_once('weblamas_functions.php');
+
 require_once('weblamas_options.php');
+
 require_once('query.php');
+
 require_once('fields.php');
 require_once('custom_post.php');
+
 add_theme_support( 'post-thumbnails' ); 
 //отменить  srcset
 add_filter( 'wp_calculate_image_srcset_meta', '__return_null' );
@@ -14,6 +19,7 @@ add_action('init', function(){
         wp_deregister_script('jquery');
     }
 });
+
 
 function rus_plural($number,$after){
 	$cases = array (2, 0, 1, 1, 1, 2);
@@ -50,6 +56,7 @@ function wpcf7_submitwl_form_tag_handler( $tag ) {
 
 	return $html;
 }
+
 
 
 //---------------------  добавление мелких изменений ----------------------- 

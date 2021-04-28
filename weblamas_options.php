@@ -134,7 +134,7 @@ class WeblamasOptions_parent{
 	}
 	
 	public function meta_metabox(){
-		add_meta_box('meta_sectionid',"Настройки",array($this,'meta_metabox_callback'));
+		add_meta_box('meta_sectionid',"Настройки",array($this,'meta_metabox_callback'),null,'side');
 	}
 	public function meta_metabox_callback($post){
 		$field_value=get_post_meta( $post->ID, '_meta_tags', true );

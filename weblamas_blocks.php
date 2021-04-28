@@ -1,11 +1,13 @@
 <?php 
 class WeblamasBlocks{
 	static $blocks=[];
+	static $custom_renderers=[];
 	public static function init(){
 		add_action('admin_head', array(get_called_class(),'adminStyles'));
 		add_filter('render_block',array(get_called_class(),'render_block'),10,2);
-		
-		
+	}
+	public static function addCustomRenderer($block,$filename){
+		self::$custom_renderers[$block]=$filename;
 	}
 	public static function registerStyle($params){
 		if(empty($params['filename'])){
@@ -26,6 +28,18 @@ class WeblamasBlocks{
 		echo'</style>';
 	}
 	public static function render_block($block_content,$block){
+		if(!empty(self::$custom_renderers[$block['blockName']])){
+			$f=get_stylesheet_directory().'/html/block_'.self::$custom_renderers[$block['blockName']].'.php';
+			if(file_exists($f)){
+				ob_start();
+				include($f);
+				$q=ob_get_clean();
+				return $q;
+			}else{
+				return 'нет файла.'.$f;
+			}
+		}
+		
 		if(empty($block['attrs']['className']))return $block_content;
 		$classes=explode(' ',$block['attrs']['className']);
 		foreach(static::$blocks as $sblock){

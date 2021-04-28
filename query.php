@@ -184,7 +184,6 @@ class Query{
 			$sql='select post_id,meta_value from '.$wpdb->postmeta.' where meta_key="_wp_attachment_metadata" and post_id in ('.implode(',',$thumbnails_ids).')';
 			$thumbnails=$wpdb->get_results($sql);
 			$thumbnails=wp_list_pluck($thumbnails,'meta_value','post_id');
-			$upload_dir=wp_upload_dir();
 			foreach($result as $k=>$v){
 				if(!empty($thumbnails[$v['thumbnail_id']])){
 					$image=$this->metadata_to_images($thumbnails[$v['thumbnail_id']],$this->thumbnail_sizes,$v['thumbnail_id'],'thumbnail');
@@ -201,21 +200,33 @@ class Query{
 		$result=[];
 		$th=maybe_unserialize($metadata);
 		$upload_dir=wp_upload_dir();
-					if(empty($th['file'])){
+		if(empty($th['file'])){
 			$th['file']=$wpdb->get_var('select meta_value from '.$wpdb->postmeta.' where meta_key="_wp_attached_file" and post_id='.$ID);
-					}
+		}
 		foreach($sizes as $size){
-						if(!empty($th['sizes'][$size])){
-							// формируем картинку, чтобы применить фильтры
-							$image=[$upload_dir['baseurl'].'/'.pathinfo($th['file'],PATHINFO_DIRNAME).'/'.$th['sizes'][$size]['file'],$th['sizes'][$size]['width'],$th['sizes'][$size]['height']];
-							$image=apply_filters('wp_get_attachment_image_src',$image,$v['thumbnail_id'],$size,false);
+			if(!empty($th['sizes'][$size])){
+				// формируем картинку, чтобы применить фильтры
+				$image=[$upload_dir['baseurl'].'/'.pathinfo($th['file'],PATHINFO_DIRNAME).'/'.$th['sizes'][$size]['file'],$th['sizes'][$size]['width'],$th['sizes'][$size]['height']];
+				$image=apply_filters('wp_get_attachment_image_src',$image,$v['thumbnail_id'],$size,false);
 				$result[$prefix.'_'.$size]=$image[0];
-						}
-					}
+			}else{
+				$global_sizes=wp_get_additional_image_sizes();
+				if($global_sizes[$size]['width']>$th['width']&&$global_sizes[$size]['height']>$th['height']){
 					$image=[$upload_dir['baseurl'].'/'.$th['file'],$th['width'],$th['height']];
-					$image=apply_filters('wp_get_attachment_image_src',$image,$v['thumbnail_id'],'full',false);
+					$image=apply_filters('wp_get_attachment_image_src',$image,$v['thumbnail_id'],$size,false);
+					$result[$prefix.'_'.$size]=$image[0];
+				}else{
+					$r=image_downsize($ID,$size);
+					if(!empty($r)){
+						$image=apply_filters('wp_get_attachment_image_src',$r,$v['thumbnail_id'],$size,false);
+						$result[$prefix.'_'.$size]=$image[0];
+					}
+				}
+			}
+		}
+		$image=[$upload_dir['baseurl'].'/'.$th['file'],$th['width'],$th['height']];
+		$image=apply_filters('wp_get_attachment_image_src',$image,$v['thumbnail_id'],'full',false);
 		$result[$prefix]=$image[0];
-		//$result[$k]=$v;
 		return $result;
 	}
 	public function first(){

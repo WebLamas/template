@@ -21,6 +21,10 @@ Class FieldRenderer{
 		
 		if($field['type']=='checkbox'){
 			echo '<input type="checkbox" name="'.$field_name.'" '.(!empty($field_value)?'checked':'').'>';
+		}elseif($field['type']=='radio'){
+			foreach($field['items'] as $val=>$label){
+				echo '<label><input type="radio" name="'.$field_name.'"  value="'.$val.'"'.(($field_value==$val)?'checked':'').'>'.$label.'</label>';
+			}
 		}elseif($field['type']=='simple_checkbox'){
 			echo '<label><input type="checkbox" name="'.$field_name.'" '.(!empty($field_value)?'checked':'').'>'.$field['simple_label'].'</label>';
 		}elseif($field['type']=='editor'){

@@ -51,6 +51,14 @@ abstract class WeblamasCustomPost{
 	public static function addarchivedescription(){
 		add_submenu_page('edit.php?post_type=' . static::$name,"Описание для архива","Описание для архива",'edit_posts',static::$name . '-description',array(get_called_class(),'archivedescription'));	
 	}
+	public static function get_archive_description($variant=''){
+		$value=get_option('archivedesc_'.static::$name);
+		$value=unserialize(base64_decode($value));
+		if(!empty($variant)){
+			$value=$value[$variant];
+		}
+		return $value;
+	}
 	public static function archivedescriptionFields($variant='',$title=''){
 		$value=get_option('archivedesc_'.static::$name);
 		$value=unserialize(base64_decode($value));
@@ -209,6 +217,9 @@ abstract class WeblamasCustomPost{
 				</script>
 				<?php
 			}else{
+				if($fieldm['type']=='unused'){
+					continue;
+				}
 				if(!empty($fieldm['label'])){
 					echo '<div><label for="'.$fieldm['name'].'">'.$fieldm['label'].'</label></div>';
 				}
@@ -258,6 +269,7 @@ abstract class WeblamasCustomPost{
 		if ( ! current_user_can( 'edit_post', $post_id ) ) 	return;
 		$cf=static::customFields();
 		foreach($cf as $field){
+			if($field['type']=='unused') continue;
 			if ( ! isset( $_POST[$field['name']] ) ){
 				update_post_meta( $post_id, '_'.$field['name'], '' );
 				continue;
