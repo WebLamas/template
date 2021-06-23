@@ -14,7 +14,7 @@ Class FieldRenderer{
 			}	
 		}elseif($field['type']=='post_type'){
 			global $wpdb;
-			$posts=$wpdb->get_results('select ID,post_title from wp_posts where post_type="'.$field['post_type'].'"');
+			$posts=$wpdb->get_results('select ID,concat(post_title,if(post_status="draft","(Черновик)","")) as post_title from wp_posts where post_type="'.$field['post_type'].'"');
 			$field['options']=wp_list_pluck($posts,'post_title','ID');
 			$field['type']='select';	
 		}
@@ -45,9 +45,13 @@ Class FieldRenderer{
 		}elseif($field['type']=='textarea'){
 			echo '<textarea name="'.$field_name.'">'.$field_value.'</textarea>';
 		}elseif($field['type']=='select'){
-			echo '<select name="'.$field_name.'">';
+			$multiple=$field['multiple'];
+			if(!is_array($field_value)){
+				$field_value=[$field_value];
+			}
+			echo '<select class="select2"name="'.$field_name.($multiple?'[]':'').'"'.($multiple?' multiple':'').'>';
 			foreach($field['options'] as $k=>$v){
-				echo '<option value="'.$k.'"'.($k==$field_value?' selected':'').'>'.$v.'</option>';
+				echo '<option value="'.$k.'"'.(in_array($k,$field_value)?' selected':'').'>'.$v.'</option>';
 			}
 			echo '</select>';
 		}elseif($field['type']=='info'){
@@ -115,9 +119,108 @@ Class FieldRenderer{
 
 			echo '<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDkYtMcjg1cfV3aBe87ROSV3udADCpu-ZM&signed_in=true&callback=initMap" async defer></script>';
 			echo '<input type="hidden" id="coords" name="'.$field_name.'" value=\''.$field_value.'\'size="25" /></div>';
+		}elseif($field['type']=='curcalendar'){
+			echo '<div class="curcalendar">';
+			for($i=1;$i<=12;$i++){
+				echo_curcalendar($i,date('Y'),$field_name,$field_value);
+			}
+			echo '</div>';
+			?>
+			<style>
+			.curcalendar{
+				display: flex;
+				flex-wrap: wrap;
+			}
+			.curcalendar_month{
+				margin: 0 25px 25px 0;
+				width: 20%;
+				border-collapse: collapse;
+				background: white;
+			}
+			.curcalendar input{
+				display:none;
+			}
+			.curcalendar input:checked + span{
+				background:#fd5446;
+				color:#fff;
+			}
+			.curcalendar_month td{
+				width:30px;
+				height:30px;
+			}
+			.curcalendar_month label, .curcalendar_month span{
+				display: block;
+				height: 100%;
+				line-height: 30px;
+				text-align: center;
+			} 
+			</style>
+			<?php
 		}else{
 			var_dump($field);
 			echo 'нужно запрограммировать новый тип поля('.$field['type'].')';
 		}
 	}
+}
+
+function echo_curcalendar($month,$year,$name,$values){
+	if($month>12){
+		$year+=1;
+		$month-=12;
+	}
+		$months = array(
+			1  => 'Январь',
+			2  => 'Февраль',
+			3  => 'Март',
+			4  => 'Апрель',
+			5  => 'Май',
+			6  => 'Июнь',
+			7  => 'Июль',
+			8  => 'Август',
+			9  => 'Сентябрь',
+			10 => 'Октябрь',
+			11 => 'Ноябрь',
+			12 => 'Декабрь'
+		);
+		$day_week = date('N', mktime(0, 0, 0, $month, 1, $year));
+		$day_week--;
+	?>
+	<table class="curcalendar_month" border=1>
+		<tr><td colspan=7><?php echo $months[(int)$month];?></td></tr>
+		<tr>
+			<th>ПН</th>
+			<th>ВТ</th>
+			<th>СР</th>
+			<th>ЧТ</th>
+			<th>ПТ</th>
+			<th>СБ</th>
+			<th>ВС</th>
+		</tr>
+		<tr>
+		<?php for ($x = 0; $x < $day_week; $x++) {
+			echo '<td></td>';
+		}?>
+		<?php
+		$days_month = date('t', mktime(0, 0, 0, $month, 1, $year));
+	
+		for ($day = 1; $day <= $days_month; $day++):?>
+		
+		<td><label><input type="checkbox" name="<?php echo $name;?>[<?php echo $year.'-'.$month.'-'.$day;?>]" <?php echo !empty($values[$year.'-'.$month.'-'.$day])?' checked':'';?>><span><?php echo $day;?><span></label></td>
+		<?php 
+		if ($day_week == 6) {
+				echo '</tr>';
+			if (($days_counter + 1) != $days_month) {
+				echo '<tr>';
+			}
+			$day_week = -1;
+		}
+
+		$day_week++; 
+
+		$days_counter++;
+		?>
+		<?php endfor;?>
+		
+	</table>
+	<?
 }

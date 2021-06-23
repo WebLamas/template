@@ -12,7 +12,11 @@ class Query{
 		$this->post_type=$post_type;
 		return $this;
 	}
-	public function fields($params){
+	public function applyFilters($r){
+		$this->apply_filters=$r;
+		return $this;
+	}
+	public function fields($params,$can_fake=false){
 		if(!is_array($params)){
 			$params=array($params);
 		}
@@ -34,7 +38,7 @@ class Query{
 		}
 		$params=array_unique($params);
 		foreach($params as $k=>$field){
-			if(in_array($field,array('post_content','post_title','ID','post_status','post_name','post_excerpt','post_parent','menu_order'))){
+			if(in_array($field,array('post_content','post_title','ID','post_status','post_name','post_excerpt','post_parent','menu_order','post_date'))){
 				$this->fields[]=$field;
 				unset($params[$k]);
 				continue;
@@ -64,15 +68,15 @@ class Query{
 		}
 		if(empty($params)) return $this;
 		
-		if(!empty($params)){
+		if(!empty($params)&&!$can_fake){
 			var_dump('error field'.json_encode($params));
 			var_dump($this->post_fields);
 			return $this;
 		}
-		if(empty($params)) return $this;
-		
+		return $this;		
 	}
 	public function orderBy($param,$order="desc"){
+		$this->fields($param,true);
 		$this->orderby.=$param.' '.$order;
 		return $this;
 	}
@@ -123,6 +127,7 @@ class Query{
 		}
 		//var_dump($query);
 		$r= $wpdb->get_results($query);
+		
 		$result=array();
 		$thumbnails_ids=array();
 		foreach($r as $rq){
@@ -147,8 +152,8 @@ class Query{
 				
 			}
 			if(isset($rq['link'])){
-				if(has_filter('post_type_link')){ //потом сделать для категорий
-					$rq['link']=get_post_permalink($rq['ID']);
+				if(has_filter('post_type_link')||$this->post_type=='post'){ //потом сделать для категорий
+					$rq['link']=get_permalink($rq['ID']);
 				}else{
 					global $wp_rewrite;
 					$post_link = $wp_rewrite->get_extra_permastruct($this->post_type);
@@ -207,26 +212,27 @@ class Query{
 			if(!empty($th['sizes'][$size])){
 				// формируем картинку, чтобы применить фильтры
 				$image=[$upload_dir['baseurl'].'/'.pathinfo($th['file'],PATHINFO_DIRNAME).'/'.$th['sizes'][$size]['file'],$th['sizes'][$size]['width'],$th['sizes'][$size]['height']];
-				$image=apply_filters('wp_get_attachment_image_src',$image,$v['thumbnail_id'],$size,false);
+				$image=apply_filters('wp_get_attachment_image_src',$image,$ID,$size,false);
 				$result[$prefix.'_'.$size]=$image[0];
 			}else{
 				$global_sizes=wp_get_additional_image_sizes();
 				if($global_sizes[$size]['width']>$th['width']&&$global_sizes[$size]['height']>$th['height']){
 					$image=[$upload_dir['baseurl'].'/'.$th['file'],$th['width'],$th['height']];
-					$image=apply_filters('wp_get_attachment_image_src',$image,$v['thumbnail_id'],$size,false);
+					$image=apply_filters('wp_get_attachment_image_src',$image,$ID,$size,false);
 					$result[$prefix.'_'.$size]=$image[0];
 				}else{
 					$r=image_downsize($ID,$size);
 					if(!empty($r)){
-						$image=apply_filters('wp_get_attachment_image_src',$r,$v['thumbnail_id'],$size,false);
+						$image=apply_filters('wp_get_attachment_image_src',$r,$ID,$size,false);
 						$result[$prefix.'_'.$size]=$image[0];
 					}
 				}
 			}
 		}
 		$image=[$upload_dir['baseurl'].'/'.$th['file'],$th['width'],$th['height']];
-		$image=apply_filters('wp_get_attachment_image_src',$image,$v['thumbnail_id'],'full',false);
+		$image=apply_filters('wp_get_attachment_image_src',$image,$ID,'full',false);
 		$result[$prefix]=$image[0];
+		$result['id']=$ID;
 		return $result;
 	}
 	public function first(){

@@ -27,6 +27,7 @@ function rus_plural($number,$after){
 	}
 add_action( 'wpcf7_init', function(){
 	wpcf7_add_form_tag( 'submitwl', 'wpcf7_submitwl_form_tag_handler' );
+	wpcf7_add_form_tag( 'wlsubmit', 'wpcf7_submitwl_form_tag_handler' );
 } );
 
 
@@ -51,7 +52,7 @@ function wpcf7_submitwl_form_tag_handler( $tag ) {
 	//$atts['value'] = $value;
 
 	$atts = wpcf7_format_atts( $atts );
-	$html=sprintf( '<button %1$s >', $atts ).htmlspecialchars_decode($value).'</button>';
+	$html='<span class="wpcf7-form-control-wrap wpcf7-form-control-wrap_button">'.sprintf( '<button %1$s >', $atts ).htmlspecialchars_decode($value).'</button></span>';
 	//$html = sprintf( '<input %1$s />', $atts );
 
 	return $html;

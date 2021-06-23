@@ -8,7 +8,7 @@ abstract class WeblamasCustomPost{
 	public static function query(){
 		$q=new Query();
 		$q->post_type(static::$name);
-		$q->post_fields=static::customFields();
+		$q->post_fields=static::customFields(true);
 		return $q;
 	}
 	public static function init(){
@@ -152,6 +152,7 @@ abstract class WeblamasCustomPost{
 	}
 	public static function meta_box_callback( $post ) {
 		wp_nonce_field( static::$name.'_save_meta_box_data', static::$name.'_meta_box_nonce' );
+		echo '<div class="weblamas_fields">';
 		foreach(static::customFields() as $fieldm){
 			$field_value=get_post_meta( $post->ID, '_'.$fieldm['name'], true );
 			if($fieldm['type']=='json'){
@@ -228,6 +229,32 @@ abstract class WeblamasCustomPost{
 				echo '</div>';
 			}
 		}
+		echo '</div>';
+		?>
+		<style>
+			.weblamas_fields input,.weblamas_fields textarea{
+				width:100%;
+			}
+			
+			.weblamas_fields input[type="checkbox"]{
+				width:auto;
+			}
+			.select2{
+					width:100%!important;
+					
+				}
+				.weblamas_fields select{
+					width:100%;
+				}
+		</style>
+		<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+jQuery(document).ready(function(){
+	jQuery(".select2").select2();
+});
+</script>
+		<?php
 	}
 	public function modify_field($field,$field_value){
 		if($field['type']=='json'){

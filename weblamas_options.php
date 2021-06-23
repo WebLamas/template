@@ -94,6 +94,8 @@ class WeblamasOptions_parent{
 			$field_value=unserialize(base64_decode($field_value));
 			if(function_exists('pll_current_language')){
 				$field_value=$field_value[pll_current_language()];
+			}else{
+				$field_value=$field_value['default'];
 			}
 			if(empty($field_value['title'])){
 				if(!empty($field_value['h1'])){
@@ -101,6 +103,9 @@ class WeblamasOptions_parent{
 				}else{
 					$field_value['title']=get_queried_object()->label;
 				}
+			}
+			if(!empty($field_value['meta_desc'])){
+				$field_value['description']=$field_value['meta_desc'];
 			}
 			
 			
@@ -220,6 +225,14 @@ class WeblamasOptions_parent{
 			.weblamasoptions input{
 				width:100%;
 			}
+			.weblamasoptions input[type="checkbox"]{
+				width: auto;
+			}
+			.weblamasoptions input[type="submit"]{
+				width: auto;
+				font-size: 17px;
+				padding: 10px 30px;
+			}
 			.weblamasoptions textarea{
 				width:100%;
 				height:50px;
@@ -235,11 +248,12 @@ class WeblamasOptions_parent{
 			foreach($this->getParams() as $par){
 				if($par['type']=='group'){
 					foreach($par['fields'] as $fld){
-						self::$options[$fld['name']]=$_POST[$fld['name']];
+						self::$options[$fld['name']]=is_string($_POST[$fld['name']])?stripslashes(stripslashes($_POST[$fld['name']])):$_POST[$fld['name']];
 					}
 				}else{
-				self::$options[$par['name']]=$_POST[$par['name']];
-			}
+					
+					self::$options[$par['name']]=$_POST[$par['name']];
+				}
 			}
 			update_option('weblamas_options',json_encode(self::$options));
 		}
@@ -247,6 +261,12 @@ class WeblamasOptions_parent{
 	
 }
 
+function get_archive_desc(){
+	//var_dump(get_queried_object()->name);
+	$field_value=get_option('archivedesc_'.get_queried_object()->name);
+	$field_value=unserialize(base64_decode($field_value));
+	return $field_value['default'];
+}
 
 
 
