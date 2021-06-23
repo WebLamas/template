@@ -43,7 +43,7 @@ Class FieldRenderer{
 		}elseif($field['type']=='date'){
 			echo '<input type="date" name="'.$field_name.'" value="'.$field_value.'">';
 		}elseif($field['type']=='textarea'){
-			echo '<textarea name="'.$field_name.'">'.$field_value.'</textarea>';
+			echo '<textarea name="'.$field_name.'" style="width:100%" class="textarea_autosize">'.$field_value.'</textarea>';
 		}elseif($field['type']=='select'){
 			$multiple=$field['multiple'];
 			if(!is_array($field_value)){
@@ -60,6 +60,23 @@ Class FieldRenderer{
 			}elseif(!empty($field['html'])){
 				echo $field['html'];
 			}
+		}elseif($field['type']=='image'){
+			$imageurl=wp_get_attachment_image_url($field_value,'full');
+			echo '<div class="wlfields_image" style="'.(!empty($imageurl)?'background:url('.$imageurl.')no-repeat center;background-size:contain;':'').'" data-media-uploader-target="#image_'.$field_name.'">'.(empty($imageurl)?'выберите картинку':'').'</div><input id="image_'.$field_name.'" type="hidden" name="'.$field_name.'" value="'.htmlspecialchars($field_value).'">';//<input type="text" name="'.$field_name.'" value="'.htmlspecialchars($field_value).'" list="data_'.$field_name.'">';
+			?>
+			<style>
+				.wlfields_image{
+				border: 1px dashed #afafaf;
+				border-radius: 4px;
+				padding: 10px;
+				box-sizing: border-box;
+				width: 100%; 
+				height: 90px;
+				line-height: 70px;
+				cursor:pointer;
+				}
+			</style>
+			<?php
 		}elseif($field['type']=='mappoint'){
 			if(empty($field_value)){
 				$field_value=base64_encode('{"lat": 55.75583, "lng": 37.61778}');
@@ -117,7 +134,7 @@ Class FieldRenderer{
 			echo '<div id="map"></div><style>#map{height:300px}</style>';
 			//echo '<script src="'.get_template_directory_uri().'/admin.js"></script>';
 
-			echo '<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDkYtMcjg1cfV3aBe87ROSV3udADCpu-ZM&signed_in=true&callback=initMap" async defer></script>';
+			echo '<script src="https://maps.googleapis.com/maps/api/js?key='.$key.'&signed_in=true&callback=initMap" async defer></script>';
 			echo '<input type="hidden" id="coords" name="'.$field_name.'" value=\''.$field_value.'\'size="25" /></div>';
 		}elseif($field['type']=='curcalendar'){
 			echo '<div class="curcalendar">';

@@ -20,6 +20,14 @@ add_action('init', function(){
     }
 });
 
+add_action('admin_enqueue_scripts',function(){
+	wp_enqueue_media();
+
+	// Registers and enqueues the required javascript.
+	wp_register_script( 'meta-box-image', get_template_directory_uri() .'/js/wlfields.js' , array( 'jquery' ) );
+	wp_enqueue_script( 'meta-box-image' );
+});
+
 
 function rus_plural($number,$after){
 	$cases = array (2, 0, 1, 1, 1, 2);

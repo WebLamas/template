@@ -1,4 +1,5 @@
 <?php
+return;
 $templates=WeblamasTemplate::get_subtemplates();
 ?><!DOCTYPE html>
 <html <?php language_attributes(); ?> class="no-js">

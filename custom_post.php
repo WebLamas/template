@@ -8,7 +8,7 @@ abstract class WeblamasCustomPost{
 	public static function query(){
 		$q=new Query();
 		$q->post_type(static::$name);
-		$q->post_fields=static::customFields(true);
+		$q->post_fields=static::customFields(true); //get all fields
 		return $q;
 	}
 	public static function init(){
