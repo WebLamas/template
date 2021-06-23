@@ -164,6 +164,10 @@ class WeblamasOptions_parent{
 			}
 	}
 	public static function getValue($name){
+		$l=get_option('frontval_'.$name);
+		if(!empty($l)){
+			return $l;
+		}
 		if(empty(self::$options)){
 			self::$options=json_decode(get_option('weblamas_options'),true);
 		}
@@ -242,17 +246,28 @@ class WeblamasOptions_parent{
 </div>
 <?
 	}
+	public function modify_field($field,$value){
+		if($field['frontedit']){
+			update_option('frontval_'.$field['name'],$value);
+			$files = glob(get_stylesheet_directory().'/html_cached/*'); // get all file names
+			foreach($files as $file){ // iterate files
+			  if(is_file($file)) {
+				unlink($file); // delete file
+			  }
+			}
+		}
+		return $value;
+	}
 	public function save_options(){
 		if(empty($_POST['action'])||empty($_REQUEST['page']))return;
 		if($_POST['action']=='save'&& $_REQUEST['page']=='weblamasoptions'){
 			foreach($this->getParams() as $par){
 				if($par['type']=='group'){
 					foreach($par['fields'] as $fld){
-						self::$options[$fld['name']]=is_string($_POST[$fld['name']])?stripslashes(stripslashes($_POST[$fld['name']])):$_POST[$fld['name']];
+						self::$options[$fld['name']]=$this->modify_field($fld,$_POST[$fld['name']]);
 					}
 				}else{
-					
-					self::$options[$par['name']]=$_POST[$par['name']];
+					self::$options[$par['name']]=$this->modify_field($fld,$_POST[$par['name']]);
 				}
 			}
 			update_option('weblamas_options',json_encode(self::$options));

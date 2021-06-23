@@ -1,4 +1,5 @@
 <?php 
+include('simple_html_dom.php');
 class WeblamasTemplate{
 	public static $templates=array();
 	public static function addTemplate($template){
@@ -6,13 +7,53 @@ class WeblamasTemplate{
 		$templates[]=$template.'.php';
 		self::$templates=$templates;
 	}
-	
+	public static function cacheTemplate($template){
+		$f=get_stylesheet_directory().'/html/'.$template;
+		$f_cached=get_stylesheet_directory().'/html_cached/'.$template;
+		$html=str_get_html(file_get_contents($f));
+		foreach($html->find('[data-editable]') as $bl){
+			$s=($bl->{'data-editable'});
+			if(is_string($s)&&$l=get_option('frontval_'.$s)){
+				$bl->innertext=stripslashes($l);
+			}
+			$bl->{'data-editable'}=null;
+		}
+		if(!is_dir(get_stylesheet_directory().'/html_cached/')){
+			mkdir(get_stylesheet_directory().'/html_cached/');
+		}
+		file_put_contents($f_cached,$html->save());
+	}
+	public static function adminTemplate($template){
+		ob_start();
+		include(get_stylesheet_directory().'/html/'.$template);
+		$s=ob_get_clean();
+		$html=str_get_html($s);
+		foreach($html->find('[data-editable]') as $bl){
+			$bl->contenteditable=true;
+			$s=($bl->{'data-editable'});
+			if(is_string($s)&&$l=get_option('frontval_'.$s)){
+				$bl->innertext=stripslashes($l);
+			}
+		}
+		echo $html->save();
+		echo '<div class="frontedit"><span class="frontedit__save">Сохранить</span></div>';
+	}
 	public static function loadTemplate($templates=array()){
 		$templates=self::get_subtemplates();
 		foreach(array_reverse($templates) as $t){
 			$f=get_stylesheet_directory().'/html/'.$t;
+			$f_cached=get_stylesheet_directory().'/html_cached/'.$t;
 			if(file_exists($f)){
-				include($f);
+				if( current_user_can('editor') || current_user_can('administrator') ){
+					self::adminTemplate($t);
+					return;
+				}else{
+					if(!file_exists($f_cached)||true){
+						self::cacheTemplate($t);
+					}
+					//include($f_fac);
+					include($f_cached);
+				}
 				return;
 			}
 		}

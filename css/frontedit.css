@@ -1,0 +1,17 @@
+.frontedit{
+	position:absolute;
+	z-index:9999;
+}
+.frontedit__save{
+    background: #4179e0;
+    color: #fff;
+    font-weight: 700;
+    padding: 7px 20px;
+    font-size: 14px;
+    border-radius: 6px;
+    box-shadow: 0 3px 5px rgba(0,0,0,0.25);
+	cursor:pointer;
+}
+.frontedit__save:hover{
+	background: #3664b9;
+}

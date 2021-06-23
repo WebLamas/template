@@ -111,6 +111,9 @@ class Query{
 		var_dump($item);
 		var_dump($this->post_fields);
 	}
+	public function published(){
+		return $this->where('post_status','publish');
+	}
 	public function limit($limit,$offset=0){
 		$this->limit=$offset.','.$limit;
 		return $this;

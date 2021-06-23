@@ -1,6 +1,6 @@
 <?php 
 
-require_once('weblamas_functions.php');
+require_once('weblamas_templates.php');
 
 require_once('weblamas_options.php');
 
@@ -18,6 +18,10 @@ add_action('init', function(){
     if (!is_admin()&&!($GLOBALS['pagenow'] === 'wp-login.php')) {
         wp_deregister_script('jquery');
     }
+	if(current_user_can('editor') || current_user_can('administrator')){
+		wp_enqueue_script( 'frontend_edit_js', get_template_directory_uri().'/js/frontedit.js', array('jquery'),2.2,true);
+		wp_enqueue_style( 'frontend_edit_css', get_template_directory_uri().'/css/frontedit.css', null,2.2);
+	}
 });
 
 add_action('admin_enqueue_scripts',function(){
@@ -87,3 +91,16 @@ function disable_emojis() {
 	//add_filter( 'tiny_mce_plugins', 'disable_emojis_tinymce' );
 }
 add_action( 'init', 'disable_emojis' );
+
+
+add_action( 'wp_ajax_update_frontval', function(){
+	global $wpdb; // this is how you get access to the database
+	update_option('frontval_'.$_POST['id'],$_POST['value']);
+	$files = glob(get_stylesheet_directory().'/html_cached/*'); // get all file names
+	foreach($files as $file){ // iterate files
+	  if(is_file($file)) {
+		unlink($file); // delete file
+	  }
+	}
+	wp_die();
+});
