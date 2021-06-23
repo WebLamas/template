@@ -1,5 +1,5 @@
 <?php 
-include('simple_html_dom.php');
+
 class WeblamasTemplate{
 	public static $templates=array();
 	public static function addTemplate($template){
@@ -10,32 +10,59 @@ class WeblamasTemplate{
 	public static function cacheTemplate($template){
 		$f=get_stylesheet_directory().'/html/'.$template;
 		$f_cached=get_stylesheet_directory().'/html_cached/'.$template;
-		$html=str_get_html(file_get_contents($f));
-		foreach($html->find('[data-editable]') as $bl){
-			$s=($bl->{'data-editable'});
+		$s=(file_get_contents($f));
+		$dom = new DOMDocument;
+		$s=mb_convert_encoding($s, 'HTML-ENTITIES', 'UTF-8');
+		$dom->loadHTML('<body>'.$s.'</body>',LIBXML_NOERROR|LIBXML_NOWARNING);
+		$xpath = new DOMXPath($dom);
+		$nodes = $xpath->query("//*[@data-editable]");
+		foreach($nodes as $node) {	
+			$s=$node->getAttribute('data-editable');
+			$node->removeAttribute('data-editable');
 			if(is_string($s)&&$l=get_option('frontval_'.$s)){
-				$bl->innertext=stripslashes($l);
+				self::setInnerHtml($node,stripslashes($l));
 			}
-			$bl->{'data-editable'}=null;
+		}
+		$s=substr($dom->saveHTML($dom->getElementsByTagName('body')->item(0)),6,-7);
+		preg_match_all('/&lt;\?php(?<code>.+)\?&gt;/',$s,$matches);
+		$codes=array_unique($matches['code']);
+		foreach($codes as $code){
+			$s=str_replace('&lt;?php'.$code.'?&gt;','<?php'.urldecode($code).'?>',$s);
 		}
 		if(!is_dir(get_stylesheet_directory().'/html_cached/')){
 			mkdir(get_stylesheet_directory().'/html_cached/');
 		}
-		file_put_contents($f_cached,$html->save());
+		file_put_contents($f_cached,$s);
 	}
+	function setInnerHTML($element, $html){
+		$fragment = $element->ownerDocument->createDocumentFragment();
+		$fragment->appendXML($html);
+		while ($element->hasChildNodes())
+			$element->removeChild($element->firstChild);
+		$element->appendChild($fragment);
+	}
+
 	public static function adminTemplate($template){
-		ob_start();
-		include(get_stylesheet_directory().'/html/'.$template);
-		$s=ob_get_clean();
-		$html=str_get_html($s);
-		foreach($html->find('[data-editable]') as $bl){
-			$bl->contenteditable=true;
-			$s=($bl->{'data-editable'});
+		$s=file_get_contents(get_stylesheet_directory().'/html/'.$template);
+		$dom = new DOMDocument;
+		$s=mb_convert_encoding($s, 'HTML-ENTITIES', 'UTF-8');
+		$dom->loadHTML('<body>'.$s.'</body>',LIBXML_NOERROR|LIBXML_NOWARNING);
+		$xpath = new DOMXPath($dom);
+		$nodes = $xpath->query("//*[@data-editable]");
+		foreach($nodes as $node) {
+			$node->setAttribute('contenteditable', 'true');
+			$s=$node->getAttribute('data-editable');
 			if(is_string($s)&&$l=get_option('frontval_'.$s)){
-				$bl->innertext=stripslashes($l);
+				self::setInnerHtml($node,stripslashes($l));
 			}
 		}
-		echo $html->save();
+		$s=substr($dom->saveHTML($dom->getElementsByTagName('body')->item(0)),6,-7);
+		preg_match_all('/&lt;\?php(?<code>.+)\?&gt;/',$s,$matches);
+		$codes=array_unique($matches['code']);
+		foreach($codes as $code){
+			$s=str_replace('&lt;?php'.$code.'?&gt;','<?php'.urldecode($code).'?>',$s);
+		}
+		eval('?>'.$s);
 		echo '<div class="frontedit"><span class="frontedit__save">Сохранить</span></div>';
 	}
 	public static function loadTemplate($templates=array()){
