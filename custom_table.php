@@ -168,9 +168,15 @@ abstract class wlCustomTable {
 				if($get['status']=='error'){
 					$result=$result->where('status','1');
 				}elseif($get['status']=='queue'){
-					$result=$result->where('status',0)->whereRaw('lat is null');
+					$result=$result->whereRaw('status in(0,2)');
 				}elseif($get['status']=='deleted'){
-					$result=$result->where('status',2);
+					$result=$result->where('deleted',1);
+				}elseif($get['status']=='bad_coords'){
+					$result=$result->where('status',3);
+				}elseif($get['status']=='good_coords'){
+					$result=$result->where('status',4);
+				}elseif($get['status']=='far'){
+					$result=$result->where('status',5);
 				}
 				
 			}
@@ -264,9 +270,12 @@ class wlListTable extends WP_List_Table{
 		$tc=$this->cTable; 
 		$status_links = array(
 			"all"       => __("<a href='".add_query_arg('status','all')."'>Все (".$tc::rec_count(['status'=>'all']).")</a>",'my-plugin-slug'),
-			"no_coords" => __("<a href='".add_query_arg('status','error')."'>Без координат (".$tc::rec_count(['status'=>'error']).")</a>",'my-plugin-slug'),
+			"good_coords"   => __("<a href='".add_query_arg('status','good_coords')."'>Точная координата (".$tc::rec_count(['status'=>'good_coords']).")</a>",'my-plugin-slug'),
+			"bad_coords"   => __("<a href='".add_query_arg('status','bad_coords')."'>Неточная координата (".$tc::rec_count(['status'=>'bad_coords']).")</a>",'my-plugin-slug'),
+			"no_coords" => __("<a href='".add_query_arg('status','error')."'>Ошибка (".$tc::rec_count(['status'=>'error']).")</a>",'my-plugin-slug'),
 			"in_queue"   => __("<a href='".add_query_arg('status','queue')."'>В очереди (".$tc::rec_count(['status'=>'queue']).")</a>",'my-plugin-slug'),
-			"deleted"   => __("<a href='".add_query_arg('status','deleted')."'>Удалены (".$tc::rec_count(['status'=>'deleted']).")</a>",'my-plugin-slug'),
+			"far"   => __("<a href='".add_query_arg('status','far')."'>Определились далеко (".$tc::rec_count(['status'=>'far']).")</a>",'my-plugin-slug'),
+			"deleted"   => __("<a href='".add_query_arg('status','deleted')."'>Для теста (".$tc::rec_count(['status'=>'deleted']).")</a>",'my-plugin-slug'),
 		);
 		return $status_links;
 	}
@@ -390,35 +399,7 @@ class wlOutputTable {
 							<td><?php 
 							$value = htmlspecialchars($element[$fld['name']]);
 							FieldRenderer::render($fld,$fld['name'],$value);?>
-							<?php /*
-							<?php if($fld['type'] == 'int'): 
-									$value = htmlspecialchars($element[$fld['name']]) ?>
-							<input class="regular-text" type="text" name="<?php echo $fld['name']?>" value="<?php echo $value ?>"/>
-							<?php elseif($fld['type'] == 'text'): 
-									$value = htmlspecialchars($element[$fld['name']]) ?>
-							<input class="regular-text" type="text" name="<?php echo $fld['name']?>" value="<?php echo $value ?>"/>
-							<?php elseif($fld['type'] == 'checkbox'): 
-									$value = ($element[$fld['name']]) ? ' checked="checked"' : ''; ?>
-								<input class="regular-text" type="checkbox" name="<?php echo $fld['name']?>"<?php echo $value ?> />
-							<?php elseif($fld['type'] == 'select'):  ?>
-								<select name="<?php echo $fld['name']?>" id="<?php echo $fld['name']?>" >";
-									<?php foreach ($fld['options'] as $key => $fo) : ?>
-										<?php $value = ($element[$fld['name']] == $key) ? ' selected="selected"' : ''; ?>
-										<option value="<?php echo $key; ?>" <?php echo $value; ?> ><?php echo $fo; ?></option>
-									<?php endforeach ?>
-								</select>
-							<?php elseif($fld['type'] == 'hidden'): echo ''; ?>
-							<?php elseif($fld['type']=='textarea'):
-								$value = htmlspecialchars($element[$fld['name']]); ?>
 							
-								<textarea class="regular-text" type="checkbox" name="<?php echo $fld['name']?>"><?php echo $value ?> </textarea>
-							<?php elseif($fld['type']=='editor'):?>
-									<?php $value = $element[$fld['name']]; ?>
-								<?php echo wp_editor($value,$fld['name']);?>
-							<?php else : 
-									echo 'Нужно запрограммировать новый тип поля : '.$fld['name'].' -> '.$fld['type']; ?>
-							<?php endif; ?>
-							*/?>
 							</td>
 						</tr>
 						<?php endforeach;?>

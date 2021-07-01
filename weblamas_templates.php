@@ -8,27 +8,8 @@ class WeblamasTemplate{
 		self::$templates=$templates;
 	}
 	public static function cacheTemplate($template){
-		$f=get_stylesheet_directory().'/html/'.$template;
 		$f_cached=get_stylesheet_directory().'/html_cached/'.$template;
-		$s=(file_get_contents($f));
-		$dom = new DOMDocument;
-		$s=mb_convert_encoding($s, 'HTML-ENTITIES', 'UTF-8');
-		$dom->loadHTML('<body>'.$s.'</body>',LIBXML_NOERROR|LIBXML_NOWARNING);
-		$xpath = new DOMXPath($dom);
-		$nodes = $xpath->query("//*[@data-editable]");
-		foreach($nodes as $node) {	
-			$s=$node->getAttribute('data-editable');
-			$node->removeAttribute('data-editable');
-			if(is_string($s)&&$l=get_option('frontval_'.$s)){
-				self::setInnerHtml($node,stripslashes($l));
-			}
-		}
-		$s=substr($dom->saveHTML($dom->getElementsByTagName('body')->item(0)),6,-7);
-		preg_match_all('/&lt;\?php(?<code>.+)\?&gt;/',$s,$matches);
-		$codes=array_unique($matches['code']);
-		foreach($codes as $code){
-			$s=str_replace('&lt;?php'.$code.'?&gt;','<?php'.urldecode($code).'?>',$s);
-		}
+		$s=self::getFrontEditable($template,'user');
 		if(!is_dir(get_stylesheet_directory().'/html_cached/')){
 			mkdir(get_stylesheet_directory().'/html_cached/');
 		}
@@ -41,27 +22,45 @@ class WeblamasTemplate{
 			$element->removeChild($element->firstChild);
 		$element->appendChild($fragment);
 	}
-
-	public static function adminTemplate($template){
+	public static function getFrontEditable($template,$type){
 		$s=file_get_contents(get_stylesheet_directory().'/html/'.$template);
+		preg_match_all('/\<\?php (?<code>[\S \n\t]+?)\?>/',$s,$codes);
+		$codes=(array_unique($codes[0]));
+		//var_dump($codes);
+		foreach($codes as $id=>$code){
+			$s=str_replace($code,'<php>'.$id.'</php>',$s);
+		}
+		
+		
 		$dom = new DOMDocument;
 		$s=mb_convert_encoding($s, 'HTML-ENTITIES', 'UTF-8');
 		$dom->loadHTML('<body>'.$s.'</body>',LIBXML_NOERROR|LIBXML_NOWARNING);
 		$xpath = new DOMXPath($dom);
 		$nodes = $xpath->query("//*[@data-editable]");
 		foreach($nodes as $node) {
-			$node->setAttribute('contenteditable', 'true');
 			$s=$node->getAttribute('data-editable');
 			if(is_string($s)&&$l=get_option('frontval_'.$s)){
 				self::setInnerHtml($node,stripslashes($l));
 			}
+			if($type=='admin'){
+				$node->setAttribute('contenteditable', 'true');
+			}else{
+				$node->removeAttribute('data-editable');
+			}
 		}
 		$s=substr($dom->saveHTML($dom->getElementsByTagName('body')->item(0)),6,-7);
-		preg_match_all('/&lt;\?php(?<code>.+)\?&gt;/',$s,$matches);
-		$codes=array_unique($matches['code']);
-		foreach($codes as $code){
-			$s=str_replace('&lt;?php'.$code.'?&gt;','<?php'.urldecode($code).'?>',$s);
+		preg_match_all('/&lt;php&gt;(?<id>\d+)&lt;\/php&gt;/',$s,$matches);
+		foreach(array_unique($matches['id']) as $id){
+			$s=str_replace('&lt;php&gt;'.$id.'&lt;/php&gt;','<php>'.$id.'</php>',$s);
 		}
+		foreach($codes as $id=>$code){
+			$s=str_replace('<php>'.$id.'</php>',$code,$s);
+		}
+		return $s;
+	}
+
+	public static function adminTemplate($template){
+		$s=self::getFrontEditable($template,'admin');
 		eval('?>'.$s);
 		echo '<div class="frontedit"><span class="frontedit__save">Сохранить</span></div>';
 	}

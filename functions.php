@@ -64,7 +64,7 @@ function wpcf7_submitwl_form_tag_handler( $tag ) {
 	//$atts['value'] = $value;
 
 	$atts = wpcf7_format_atts( $atts );
-	$html='<span class="wpcf7-form-control-wrap wpcf7-form-control-wrap_button">'.sprintf( '<button %1$s >', $atts ).htmlspecialchars_decode($value).'</button></span>';
+	$html='<span class="wpcf7-form-control-wrap wpcf7-form-control-wrap_button">'.sprintf( '<button %1$s >', $atts ).htmlspecialchars_decode($value).'</button><div class="acceptance-text">Нажимая на кнопку, вы подтверждаете, что даете согласие на обработку персональных данных.</div></span>';
 	//$html = sprintf( '<input %1$s />', $atts );
 
 	return $html;
@@ -104,3 +104,11 @@ add_action( 'wp_ajax_update_frontval', function(){
 	}
 	wp_die();
 });
+
+function parse_gallery($gallery_html){
+	preg_match_all('/<li.+?data-id="(\d+)".+?<\/li>/',$gallery_html,$matches);
+	foreach($matches[1] as $l=>$mt){
+		$gallery_ids[$mt]=strip_tags($matches[0][$l]);
+	}
+	return $gallery_ids;
+}

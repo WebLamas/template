@@ -18,12 +18,12 @@ class WeblamasBlocks{
 	}
 	public static function adminStyles(){
 		echo '<style>';
-		$s=implode(',',array_map(function($item){return '.wp-block-group.is-style-'.$item;},wp_list_pluck(static::$blocks,'name')));
+		$s=implode(',',array_map(function($item){return '.is-style-'.$item;},wp_list_pluck(static::$blocks,'name')));
 		echo $s.'{border: 2px solid #0073aa; position:relative;}';
-		$s=implode(',',array_map(function($item){return '.wp-block-group.is-style-'.$item.':before';},wp_list_pluck(static::$blocks,'name')));
+		$s=implode(',',array_map(function($item){return '.is-style-'.$item.':before';},wp_list_pluck(static::$blocks,'name')));
 		echo $s.'{top:-20px;content:"",height:20px;position:absolute;background:#0073aa;font-size:10px;padding:5px;color:white;font-family:sans-serif;}';
 		foreach(static::$blocks as $bl){
-			echo '.wp-block-group.is-style-'.$bl['name'].':before{content:"'.htmlspecialchars($bl['title']).'"}';
+			echo '.is-style-'.$bl['name'].':before{content:"'.htmlspecialchars($bl['title']).'"}';
 		}
 		echo'</style>';
 	}

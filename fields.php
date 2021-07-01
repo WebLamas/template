@@ -42,6 +42,8 @@ Class FieldRenderer{
 			}
 		}elseif($field['type']=='date'){
 			echo '<input type="date" name="'.$field_name.'" value="'.$field_value.'">';
+		}elseif($field['type']=='color'){
+			echo '<input type="color" name="'.$field_name.'" value="'.$field_value.'">';
 		}elseif($field['type']=='textarea'){
 			echo '<textarea name="'.$field_name.'" style="width:100%" class="textarea_autosize">'.$field_value.'</textarea>';
 		}elseif($field['type']=='select'){
