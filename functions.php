@@ -64,7 +64,9 @@ function wpcf7_submitwl_form_tag_handler( $tag ) {
 	//$atts['value'] = $value;
 
 	$atts = wpcf7_format_atts( $atts );
-	$html='<span class="wpcf7-form-control-wrap wpcf7-form-control-wrap_button">'.sprintf( '<button %1$s >', $atts ).htmlspecialchars_decode($value).'</button><div class="acceptance-text">Нажимая на кнопку, вы подтверждаете, что даете согласие на обработку персональных данных.</div></span>';
+	$html='<span class="wpcf7-form-control-wrap wpcf7-form-control-wrap_button">'.sprintf( '<button %1$s >', $atts ).htmlspecialchars_decode($value).'</button>'.
+	//'<div class="acceptance-text">Нажимая на кнопку, вы подтверждаете, что ознакомились с <a href="/politika-konfidencialnosti.php">Пользовательским соглашением</a></div>'.
+	'</span>';
 	//$html = sprintf( '<input %1$s />', $atts );
 
 	return $html;

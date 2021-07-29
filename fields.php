@@ -15,7 +15,24 @@ Class FieldRenderer{
 		}elseif($field['type']=='post_type'){
 			global $wpdb;
 			$posts=$wpdb->get_results('select ID,concat(post_title,if(post_status="draft","(Черновик)","")) as post_title from wp_posts where post_type="'.$field['post_type'].'"');
-			$field['options']=wp_list_pluck($posts,'post_title','ID');
+			$field['options']=array();	
+			if($field['canempty']){
+				$field['options'][0]='Не связяно';
+			}
+			foreach($posts as $post){
+				$field['options'][$post->ID]=$post->post_title;
+			}
+			$field['type']='select';	
+		}elseif($field['type']=='custom_table'){
+			global $wpdb;
+			$posts=$wpdb->get_results('select id,'.$field['title'].' as title from '.$wpdb->prefix.$field['table']);
+			$field['options']=array();	
+			if($field['canempty']){
+				$field['options'][0]='Не связяно';
+			}
+			foreach($posts as $post){
+				$field['options'][$post->id]=$post->title;
+			}
 			$field['type']='select';	
 		}
 		
