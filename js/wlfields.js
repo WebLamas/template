@@ -45,3 +45,12 @@
 	});
 
 });
+
+wp.blocks.registerBlockVariation(
+   'core/gallery', {
+      isDefault: true,
+      attributes: {
+        linkTo: 'file',
+      }
+   }
+);

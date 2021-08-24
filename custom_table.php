@@ -4,6 +4,8 @@
  * custom_table classes
  *
 */ 
+include('custom_table_query.php');
+include('custom_table_listtable.php');
  
 abstract class wlCustomTable {
 	public static $version = '1.0';
@@ -70,7 +72,7 @@ abstract class wlCustomTable {
 		if(in_array($field['type'],['text']))return $value;
 		global $wpdb;
 		if($field['type']=='custom_table'){
-			return $wpdb->get_var('select '.$field['title'].' as title from '.$wpdb->prefix.$field['table']);
+			return $wpdb->get_var('select '.$field['title'].' as title from '.$wpdb->prefix.$field['table'].' where id='.$value);
 		}
 		if($field['type']=='post_type'){
 			return $wpdb->get_var('select concat(post_title,if(post_status="draft","(Черновик)","")) as post_title from wp_posts where id='.$value);

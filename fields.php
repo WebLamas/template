@@ -33,6 +33,18 @@ Class FieldRenderer{
 			foreach($posts as $post){
 				$field['options'][$post->id]=$post->title;
 			}
+			
+			$field['type']='select';	
+		}elseif($field['type']=='post_types'){
+			global $wpdb;
+			$posts=$wpdb->get_results('select ID,concat(post_title,if(post_status="draft","(Черновик)","")) as post_title from wp_posts where post_type in ("'.implode('","',$field['post_types']).'")');
+			$field['options']=array();	
+			if($field['canempty']){
+				$field['options'][0]='Не связяно';
+			}
+			foreach($posts as $post){
+				$field['options'][$post->ID]=$post->post_title;
+			}
 			$field['type']='select';	
 		}
 		

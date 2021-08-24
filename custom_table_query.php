@@ -36,7 +36,7 @@ class CustomTableQuery{
 	public function get(){
 		global $wpdb;
 		if (empty($this->fields)){
-			$fld = "*";
+			$fld = $this->table.".*";
 		}else{
 			$fld = implode(',',$this->fields);
 		}
