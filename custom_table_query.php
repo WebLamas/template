@@ -8,7 +8,7 @@ class CustomTableQuery{
 	public $orderby='';
 	public $table='';
 	public function orderBy($param,$order="desc"){
-		$this->orderby.=$param.' '.$order;
+		$this->orderby.='`'.$param.'` '.$order;
 		return $this;
 	}
 	public function orderByRaw($orderby){
@@ -68,10 +68,7 @@ class CustomTableQuery{
 		if(!empty($this->where)){
 			$query.=' where '.implode('AND',$this->where);
 		}
-		//var_dump($query);
 		$r= $wpdb->get_results($query);
-		
-		//var_dump($query);
 		return $r[0]->cnt;
 		
 	}

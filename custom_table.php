@@ -77,8 +77,6 @@ abstract class wlCustomTable {
 		if($field['type']=='post_type'){
 			return $wpdb->get_var('select concat(post_title,if(post_status="draft","(Черновик)","")) as post_title from wp_posts where id='.$value);
 		}
-		var_dump($value);
-		var_dump($field);
 		return '';
 	}
 	public static function count($get=''){
@@ -96,6 +94,12 @@ abstract class wlCustomTable {
 	public static function delete( $id ) {
 		global $wpdb;
 		return $wpdb->delete( $wpdb->prefix . static::$tablename['table'], array( 'id' => $id ), array( '%d' ) ); 
+	}
+	public function main_links(){
+		return sprintf( '<a href="'.get_admin_url().'options.php?page='.static::$tablename['name'].'&action=add" class="page-title-action" >'.static::$tablename['add'].'</a>&nbsp;');
+	}
+	public function render_page(){
+		return false;
 	}
 }
 //================================================================================================
@@ -126,9 +130,15 @@ class wlOutputTable {
 				$Tc::update( $data, $_GET['id'] );
 				}
 		}
-		if($_GET['action']=='delete'){
-			$Tc::delete( $_GET['id'] );
+		if($_GET['action']=='delete'&&$_GET['page']==$Tc::$tablename['name']){
+			if(is_array($_GET['bulk-delete'])){
+				foreach($_GET['bulk-delete'] as $id){
+					$Tc::delete( $id );
+				}
+			}elseif(!empty($_GET['id'])){
+				$Tc::delete( $_GET['id'] );
 			}
+		}
 
 	}
 
@@ -143,6 +153,10 @@ class wlOutputTable {
 	 * Plugin settings page
 	 */
 	public function render_page(){
+		$Tc = $this->cTable; 
+		if($Tc::render_page()){
+			return;
+		}
 		if($_GET['action']=='add'||$_GET['action']=='edit'){
 			return $this->edit_page();
 		}
@@ -170,9 +184,7 @@ class wlOutputTable {
 						<tr valign="top">
 							<th scope="row"><?php echo $fld['label'] ?></th>
 							<td><?php 
-							$value = htmlspecialchars($element[$fld['name']]);
-							FieldRenderer::render($fld,$fld['name'],$value);?>
-							
+							FieldRenderer::render($fld,$fld['name'],$element[$fld['name']]);?>
 							</td>
 						</tr>
 						<?php endforeach;?>
@@ -183,13 +195,14 @@ class wlOutputTable {
 		</div>
 		<?php
 	}
+	
 	public function options_page() {
 		$Tc = $this->cTable; 
 		?>
 		<div class="wrap">
 			<h2>
 				<?php echo $Tc::$tablename['label'] ?>&nbsp;
-				<?php echo sprintf( '<a href="'.get_admin_url().'options.php?page='.$Tc::$tablename['name'].'&action=add" class="page-title-action" >'.$Tc::$tablename['add'].'</a>&nbsp;'); ?>
+				<?php echo $Tc::main_links();?>
 			</h2>
 			<?php $myListTable = new wlListTable($this->cTable);
 			$myListTable->views();
@@ -199,7 +212,7 @@ class wlOutputTable {
 			 <?php
 			 $myListTable->prepare_items(); 
 			 $myListTable->search_box('поиск','wl_search'); 
-			$myListTable->display(); ?>
+			 $myListTable->display(); ?>
 				<input type="hidden" name="page" value="<?php echo $_GET['page'] ?>"/>
 			</form>
 		</div>

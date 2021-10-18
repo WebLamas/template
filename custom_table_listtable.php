@@ -23,7 +23,11 @@ class wlListTable extends WP_List_Table{
 		);
 		return $status_links;
 	}
-		
+	protected function get_bulk_actions() {
+		$actions           = array();
+		$actions['delete'] = __( 'Delete' );
+		return $actions;
+	}
 	function prepare_items() {
 	  $Tc = $this->cTable; 
 	  $columns = $this->get_columns();
@@ -53,14 +57,19 @@ class wlListTable extends WP_List_Table{
 	}
 	public function column_default( $item, $column_name ) {
 		$Tc = $this->cTable; 
+		$html=esc_html( $item[$column_name] );
+		if(method_exists($Tc,'column_default')){
+			$html=$Tc::column_default($item,$column_name,$html);
+		}
 		if( $column_name === $Tc::$tablefields[0]['name'] ) {
 			$actions = array(
 				'edit' => sprintf('<a href="?page=%s&action=%s&id=%s">Редактировать</a>',$_REQUEST['page'],'edit',$item['id']),
 				'delete' => sprintf('<a href="?page=%s&action=%s&id=%s">Удалить</a>',$_REQUEST['page'],'delete',$item['id']),
 				);
-			return esc_html( $item[$column_name] ) . $this->row_actions( $actions ); 
+			return $html . $this->row_actions( $actions ); 
 		}else{
-			return esc_html( $item[$column_name] );
+			
+			return $html;
 		}
 //		return sprintf('%1$s %2$s', $item[$column_name], $this->row_actions($actions) );
 //		return $item[$column_name];

@@ -87,7 +87,7 @@ Class FieldRenderer{
 			echo '</select>';
 		}elseif($field['type']=='info'){
 			if(!empty($field['callback'])){
-				echo call_user_func($field['callback'],$post);
+				echo call_user_func($field['callback'],$field_value);
 			}elseif(!empty($field['html'])){
 				echo $field['html'];
 			}
