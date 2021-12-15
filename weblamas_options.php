@@ -16,7 +16,7 @@ class WeblamasOptions_parent{
 		$f=get_stylesheet_directory().'/html/mod_'.$function.'.php';
 		if(file_exists($f)){
 			ob_start();
-			include($f);
+			WeblamasTemplate::loadTemplate(['mod_'.$function.'.php']);
 			$q=ob_get_clean();
 			return $q;
 			}

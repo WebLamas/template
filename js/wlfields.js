@@ -31,10 +31,9 @@
 
 		// Runs when an image is selected.
 		metaImageFrame.on('select', function() {
-
 			// Grabs the attachment selection and creates a JSON representation of the model.
 			var media_attachment = metaImageFrame.state().get('selection').first().toJSON();
-			$( field ).val(media_attachment.id);
+			$(btn).next().val(media_attachment.id);
 			$(btn).css('background','url('+media_attachment.url+') no-repeat center').css('background-size','contain').html('');
 
 		});

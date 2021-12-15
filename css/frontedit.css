@@ -1,6 +1,7 @@
 .frontedit{
 	position:absolute;
 	z-index:9999;
+	display:none;
 }
 .frontedit__save{
     background: #4179e0;

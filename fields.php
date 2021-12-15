@@ -93,7 +93,7 @@ Class FieldRenderer{
 			}
 		}elseif($field['type']=='image'){
 			$imageurl=wp_get_attachment_image_url($field_value,'full');
-			echo '<div class="wlfields_image" style="'.(!empty($imageurl)?'background:url('.$imageurl.')no-repeat center;background-size:contain;':'').'" data-media-uploader-target="#image_'.$field_name.'">'.(empty($imageurl)?'выберите картинку':'').'</div><input id="image_'.$field_name.'" type="hidden" name="'.$field_name.'" value="'.htmlspecialchars($field_value).'">';//<input type="text" name="'.$field_name.'" value="'.htmlspecialchars($field_value).'" list="data_'.$field_name.'">';
+			echo '<div class="wlfields_image" style="'.(!empty($imageurl)?'background:url('.$imageurl.')no-repeat center;background-size:contain;':'').'" data-media-uploader-target="#image_'.$field_name.'">'.(empty($imageurl)?'выберите картинку':'').'</div><input id="image_'.$field_name.'" type="hidden" name="'.$field_name.'" value="'.htmlspecialchars($field_value).'">';
 			?>
 			<style>
 				.wlfields_image{

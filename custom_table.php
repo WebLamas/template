@@ -3,10 +3,10 @@
  *
  * custom_table classes
  *
-*/ 
+ */ 
 include('custom_table_query.php');
 include('custom_table_listtable.php');
- 
+
 abstract class wlCustomTable {
 	public static $version = '1.0';
 	public static $tablename = array('label'=>'Заголовок','add'=>'Добавить данные','name'=>'TableName');
@@ -26,7 +26,6 @@ abstract class wlCustomTable {
 	public static function createTable(){
 		$sql=static::createTableQuery();
 		require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
-//		var_dump($sql);var_dump(dbDelta ($sql));
 		dbDelta ($sql);
 	}
 //-------------------------------------------------------------------------------------	
@@ -51,7 +50,7 @@ abstract class wlCustomTable {
 		}
 		$result = static::query();
 		return $result;
-				}
+	}
 	public static function get_list_table( $per_page = 10, $page_number = 1, $params = []) {
 		$result = static::get_query($params);
 		$result_r = $result->limit( $per_page, ($page_number-1)*$per_page )->get();
@@ -63,11 +62,10 @@ abstract class wlCustomTable {
 				$new_row[$field['name']]=static::prepare_field($row[$field['name']],$field);
 			}
 			$result[]=$new_row;
-			}
+		}
 		return $result;
 	}
 	public static function prepare_field($value,$field){
-			
 		if(empty($value))return '';
 		if(in_array($field['type'],['text']))return $value;
 		global $wpdb;
@@ -102,8 +100,6 @@ abstract class wlCustomTable {
 		return false;
 	}
 }
-//================================================================================================
-		
 //================================================================================================
 class wlOutputTable {
 
@@ -195,7 +191,6 @@ class wlOutputTable {
 		</div>
 		<?php
 	}
-	
 	public function options_page() {
 		$Tc = $this->cTable; 
 		?>

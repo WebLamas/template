@@ -31,7 +31,6 @@ class WeblamasTemplate{
 			$s=str_replace($code,'<php>'.$id.'</php>',$s);
 		}
 		
-		
 		$dom = new DOMDocument;
 		$s=mb_convert_encoding($s, 'HTML-ENTITIES', 'UTF-8');
 		$dom->loadHTML('<body>'.$s.'</body>',LIBXML_NOERROR|LIBXML_NOWARNING);
@@ -39,8 +38,12 @@ class WeblamasTemplate{
 		$nodes = $xpath->query("//*[@data-editable]");
 		foreach($nodes as $node) {
 			$s=$node->getAttribute('data-editable');
-			if(is_string($s)&&$l=get_option('frontval_'.$s)){
-				self::setInnerHtml($node,stripslashes($l));
+			
+			if(is_string($s)){
+				$l=get_option('frontval_'.$s);
+				if($l!==false){
+					self::setInnerHtml($node,stripslashes($l));
+				}
 			}
 			if($type=='admin'){
 				$node->setAttribute('contenteditable', 'true');
@@ -65,7 +68,9 @@ class WeblamasTemplate{
 		echo '<div class="frontedit"><span class="frontedit__save">Сохранить</span></div>';
 	}
 	public static function loadTemplate($templates=array()){
-		$templates=self::get_subtemplates();
+		if(empty($templates)){
+			$templates=self::get_subtemplates();
+		}
 		foreach(array_reverse($templates) as $t){
 			$f=get_stylesheet_directory().'/html/'.$t;
 			$f_cached=get_stylesheet_directory().'/html_cached/'.$t;

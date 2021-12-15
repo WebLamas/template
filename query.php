@@ -4,6 +4,7 @@ class Query{
 	public $joins=array();
 	public $orderby='';
 	public $apply_filters=true;
+	public $add_files=false;
 	public $post_type='';
 	public $thumbnail_sizes=array();
 	public $include_imagemeta=false;
@@ -33,6 +34,13 @@ class Query{
 			if(mb_substr($field,0,6)=='images'){
 				$this->images_sizes[]=mb_substr($field,7);
 				$params[]='ID';
+				unset($params[$k]);
+				continue;
+			}
+		}
+		foreach($params as $k=>$field){
+			if($field=='files'){
+				$this->add_files=true;
 				unset($params[$k]);
 				continue;
 			}
@@ -98,6 +106,11 @@ class Query{
 				return $this;
 			}
 		}
+		if($item=='term'){
+			$this->joins[]='left join `wp_term_relationships` on object_id=`wp_posts`.`ID` and `term_taxonomy_id`="'.$value.'"';
+			$this->where[]='(`wp_term_relationships`.object_id is not null)';
+			return $this;
+		}
 		var_dump('unknown where');
 		var_dump($item);
 		var_dump($this->post_fields);
@@ -135,7 +148,6 @@ class Query{
 		}
 		//var_dump($query);
 		$r= $wpdb->get_results($query);
-		
 		$result=array();
 		$thumbnails_ids=array();
 		foreach($r as $rq){
@@ -176,13 +188,19 @@ class Query{
 			}
 			$result[]=$rq;
 		}
+		
+		$image_files=['image/jpeg','image/png'];
 		if(!empty($this->images_sizes)){
 			if($this->include_imagemeta){
 				$fields=',post_title,post_content,post_excerpt';
 			}else{
 				$fields='';
 			}
-			$sql='select post_parent,menu_order,ID'.$fields.','.$wpdb->postmeta.'.meta_value from wp_posts right join '.$wpdb->postmeta.' on (wp_posts.ID='.$wpdb->postmeta.'.post_id and '.$wpdb->postmeta.'.meta_key="_wp_attachment_metadata") where post_parent in ('.implode(',',wp_list_pluck($result,'ID')).') order by menu_order';
+			$sql='select post_parent,menu_order,ID'.$fields.','.$wpdb->postmeta.'.meta_value 
+			from wp_posts 
+			right join '.$wpdb->postmeta.' on (wp_posts.ID='.$wpdb->postmeta.'.post_id and '.$wpdb->postmeta.'.meta_key="_wp_attachment_metadata") 
+			where post_mime_type in("'.implode('","',$image_files).'")and post_parent in ('.implode(',',wp_list_pluck($result,'ID')).') 
+			order by menu_order';
 			$img_r=$wpdb->get_results($sql,ARRAY_A);
 			$images=[];
 			foreach($img_r as $img){
@@ -215,9 +233,24 @@ class Query{
 				}
 			}
 		}
+		if($this->add_files){
+			$sql='select *,post_title,guid,post_parent,menu_order,ID from wp_posts where post_type="attachment" and post_parent in ('.implode(',',wp_list_pluck($result,'ID')).') and post_mime_type not in("'.implode('","',$image_files).'") order by menu_order';
+			$files=$wpdb->get_results($sql,ARRAY_A);
+			//var_dump($files);
+			foreach($files as $file){
+				$files_r[$file['post_parent']][]=['title'=>$file['post_title'],'link'=>$file['guid']];
+			}
+			foreach($result as $k=>$v){
+				if(!empty($files_r[$v['ID']])){
+					$v['files']=$files_r[$v['ID']];
+					$result[$k]=$v;
+				}
+			}
+		}
 		return $result;
 	}
 	private function metadata_to_images($metadata,$sizes,$ID,$prefix='thumbnail'){
+		global $wpdb;
 		$result=[];
 		$th=maybe_unserialize($metadata);
 		$upload_dir=wp_upload_dir();
