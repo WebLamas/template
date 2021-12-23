@@ -85,7 +85,6 @@ abstract class WeblamasCustomPost{
 		echo '</div>';
 	}
 	public function add_rewrite_rules($rules){
-		//var_dump($rules);
 		$new = array();
 		$new[static::$name.'/([^/]+)/(.+)/?$'] = 'index.php?'.static::$name.'=$matches[2]';
 		$new[static::$name.'/(.+)/?$'] = 'index.php?'.static::$name.'_cat=$matches[1]';

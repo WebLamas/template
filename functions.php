@@ -18,7 +18,7 @@ add_action('init', function(){
     if (!is_admin()&&!($GLOBALS['pagenow'] === 'wp-login.php')) {
         wp_deregister_script('jquery');
     }
-	if(current_user_can('editor') || current_user_can('administrator')){
+	if(current_user_can('editor') || current_user_can('administrator')&&!is_admin()){
 		wp_enqueue_script( 'frontend_edit_js', get_template_directory_uri().'/js/frontedit.js', array('jquery'),2.2,true);
 		wp_enqueue_style( 'frontend_edit_css', get_template_directory_uri().'/css/frontedit.css', null,2.2);
 	}

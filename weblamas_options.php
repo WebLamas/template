@@ -277,84 +277,66 @@ class WeblamasOptions_parent{
 }
 
 function get_archive_desc(){
+	if(is_category()){
+		$field['h1']=get_queried_object()->name;
+		$field['title']=get_queried_object()->name;
+		return $field;
+	}
 	//var_dump(get_queried_object()->name);
 	$field_value=get_option('archivedesc_'.get_queried_object()->name);
 	$field_value=unserialize(base64_decode($field_value));
 	return $field_value['default'];
 }
 
-
-
-
-/*
-// ADD FIELD TO CATEGORY TERM PAGE
-add_action( 'services_cat_add_form_fields', '___add_form_field_term_meta_text' );
-function ___add_form_field_term_meta_text() { ?>
-	<div class="form-field term-meta-text-wrap">
-        <label for="term-meta-text">Заголовок страницы в браузере</label>
-        <input type="text" name="meta_tags[title]" id="term-meta-text" value="" class="term-meta-text-field" />
-    </div>
-    <div class="form-field term-meta-text-wrap">
-        <label for="term-meta-text">Мета ключи</label>
-        <input type="text" name="meta_tags[keywords]" id="term-meta-text" value="" class="term-meta-text-field" />
-    </div>
-    <div class="form-field term-meta-text-wrap">
-        <label for="term-meta-text">Мета описание</label>
-       <textarea name="meta_tags[description]" id="description" rows="5" cols="50" class="large-text"></textarea>
-    </div>
-	<div class="form-field">
-		<label for="term-meta-text">Описание на главной</label>
-       <textarea name="meta_tags[main_desc]" id="description" rows="5" cols="50" class="large-text"></textarea>
-    </div>
-
-<?php }
-// ADD FIELD TO CATEGORY EDIT PAGE
-add_action( 'services_cat_edit_form_fields', '___edit_form_field_term_meta_text' );
-function ___edit_form_field_term_meta_text( $term ) {
-	$value = get_term_meta( $term->term_id, '_meta_tags', true );
-	$value1 = get_term_meta( $term->term_id, 'main_desc', true );
-	$value=unserialize($value);
- ?>
-
-    <tr class="form-field term-meta-text-wrap">
-        <th scope="row"><label for="term-meta-text">Заголовок таблицы в браузере</label></th>
-        <td>
-            <input type="text" name="meta_tags[title]" id="term-meta-text" value="<?php echo esc_attr( $value['title']); ?>" class="term-meta-text-field"  />
-        </td>
-    </tr>
-	<tr class="form-field term-meta-text-wrap">
-        <th scope="row"><label for="term-meta-text">Мета ключи</label></th>
-        <td>
-            <input type="text" name="meta_tags[keywords]" id="term-meta-text" value="<?php echo esc_attr( $value['keywords']); ?>" class="term-meta-text-field"  />
-        </td>
-    </tr>
-	<tr class="form-field term-meta-text-wrap">
-        <th scope="row"><label for="term-meta-text">Мета описание</label></th>
-        <td>
-            <input type="text" name="meta_tags[description]" id="term-meta-text" value="<?php echo esc_attr( $value['description']); ?>" class="term-meta-text-field"  />
-        </td>
-    </tr>
-	<tr class="form-field term-meta-text-wrap">
-        <th scope="row"><label for="term-meta-text">Описание на главной</label></th>
-        <td>
-			<?php wp_editor(( $value1),'main_desc')?>
-        </td>
-    </tr>
-
-<?php }
-// SAVE TERM META (on term edit & create)
-add_action( 'edit_services_cat',   '___save_term_meta_text' );
-add_action( 'create_services_cat', '___save_term_meta_text' );
 function ___save_term_meta_text( $term_id ) {
 	if(!empty($_POST['meta_tags'])&&is_array($_POST['meta_tags'])){
-	$my_data=serialize($_POST['meta_tags']);
-	update_term_meta( $term_id, '_meta_tags', $my_data );
-	}
-	if(!empty($_POST['main_desc'])){
-	update_term_meta( $term_id, 'main_desc', $_POST['main_desc'] );
+		$my_data=serialize($_POST['meta_tags']);
+		update_term_meta( $term_id, '_meta_tags', $my_data );
 	}
 }
-*/
+foreach(['category'] as $category){
+
+	// ADD FIELD TO CATEGORY TERM PAGE
+	add_action( $category.'_add_form_fields', function(){
+		?>
+		<div class="form-field term-meta-text-wrap">
+			<label for="term-meta-text">Заголовок страницы в браузере</label>
+			<input type="text" name="meta_tags[title]" id="term-meta-text" value="" class="term-meta-text-field" />
+		</div>
+		<div class="form-field term-meta-text-wrap">
+			<label for="term-meta-text">Мета описание</label>
+		   <textarea name="meta_tags[description]" id="description" rows="5" cols="50" class="large-text"></textarea>
+		</div>
+		<?php
+	});
+	// ADD FIELD TO CATEGORY EDIT PAGE
+	add_action( $category.'_edit_form_fields', function($term){
+		$value = get_term_meta( $term->term_id, '_meta_tags', true );
+		$value1 = get_term_meta( $term->term_id, 'main_desc', true );
+		$value=unserialize($value);
+		?>
+
+		<tr class="form-field term-meta-text-wrap">
+			<th scope="row"><label for="term-meta-text">Заголовок категории в браузере</label></th>
+			<td>
+				<input type="text" name="meta_tags[title]" id="term-meta-text" value="<?php echo esc_attr( $value['title']); ?>" class="term-meta-text-field"  />
+			</td>
+		</tr>
+		<tr class="form-field term-meta-text-wrap">
+			<th scope="row"><label for="term-meta-text">Мета описание</label></th>
+			<td>
+				<input type="text" name="meta_tags[description]" id="term-meta-text" value="<?php echo esc_attr( $value['description']); ?>" class="term-meta-text-field"  />
+			</td>
+		</tr>
+
+	<?php
+	} );
+	// SAVE TERM META (on term edit & create)
+	add_action( 'edit_'.$category,   '___save_term_meta_text' );
+	add_action( 'create_'.$category, '___save_term_meta_text' );
+
+}
+
 /*
 add_action('wp_print_styles', function(){
 	global $wp_styles;
