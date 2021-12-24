@@ -26,7 +26,6 @@ class WeblamasTemplate{
 		$s=file_get_contents(get_stylesheet_directory().'/html/'.$template);
 		preg_match_all('/\<\?php (?<code>[\S \n\t]+?)\?>/',$s,$codes);
 		$codes=(array_unique($codes[0]));
-		//var_dump($codes);
 		foreach($codes as $id=>$code){
 			$s=str_replace($code,'<php>'.$id.'</php>',$s);
 		}

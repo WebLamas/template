@@ -112,8 +112,26 @@ class WeblamasOptions_parent{
 		}elseif(is_404()){
 			$field_value['title']='404';
 			}
-		//var_dump($field_value);
 		$field_value=apply_filters('wl_meta_fields',$field_value);
+		if(empty($field_value['title'])||empty($field_value['description'])){
+			
+			$hfv=get_post_meta( get_option( 'page_on_front' ), '_meta_tags', true );
+			if(empty($field_value)){
+				$hfv=array();
+			}else{
+				$hfv=unserialize($hfv);
+			}
+			
+			if(empty($hfv['title'])){
+				$hfv['title']=get_the_title(get_option( 'page_on_front' ));
+			}
+			if(empty($field_value['title'])){
+				$field_value['title']=$hfv['title'];
+			}
+			if(empty($field_value['description'])){
+				$field_value['description']=$hfv['description'];
+			}
+		}
 		return $field_value;
 	}
 
@@ -336,47 +354,3 @@ foreach(['category'] as $category){
 	add_action( 'create_'.$category, '___save_term_meta_text' );
 
 }
-
-/*
-add_action('wp_print_styles', function(){
-	global $wp_styles;
-	$styles=array();
-	foreach($wp_styles->queue as $k=>$item){
-		if(in_array($item,array('admin-bar')))continue;
-		$styles[]=$wp_styles->registered[$item]->src;
-		unset($wp_styles->queue[$k]);
-	}
-	
-	$echo=array();
-	foreach($styles as $file){
-			
-			$file=str_replace(get_option('siteurl'),'',$file);
-			$file=get_home_path().$file;
-			$mincss_s=file_get_contents($file);
-			//$mincss_s=mb_substr($mincss_s,0,500);
-// ================= здесь я разбил не два действия  =================================
-			$tmp = pathinfo($file);
-			$mincss_dir=$tmp["dirname"];
-			$mincss_dir=str_replace(get_home_path(),'',$mincss_dir).'/';
-			$mincss_s=str_replace("url(","url(".$mincss_dir,$mincss_s);
-			$mincss_s=str_replace("url(".$mincss_dir."data:image","url(data:image",$mincss_s);
-			$mincss_s=str_replace("url(".$mincss_dir."\"data:image","url(\"data:image",$mincss_s);
-			$mincss_s=str_replace("url(".$mincss_dir."'","url('".$mincss_dir,$mincss_s);
-			$mincss_date=filemtime($file);
-			$file_c=get_stylesheet_directory().'/css/cache/'.md5($mincss_s).'.css';
-			if(file_exists($file_c)&&filemtime($file_c)>$mincss_data){
-				$echo[]=file_get_contents($file_c);
-			}else{
-				$url = "https://cssminifier.com/raw";
-				$postdata = array("http" => array(
-				"method"  => "POST",
-				"header"  => "Content-type: application/x-www-form-urlencoded",
-				"content" => http_build_query( array("input" => $mincss_s) ) ) );
-				$minified=file_get_contents($url, false, stream_context_create($postdata));
-				file_put_contents($file_c,$minified);
-				$echo[]=$minified;
-			}
-			}
-	echo '<style>'.implode($echo).'</style>';
-}, 100);
-*/
