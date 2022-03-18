@@ -93,6 +93,13 @@ class Query{
 		$this->include_imagemeta=true;
 		return $this;
 	}
+	public function whereLang($lang=''){
+		if(empty($lang)){
+			$lang=pll_current_language();
+		}
+		$langid=pll_the_languages(['raw'=>1])[$lang]['id'];
+		return $this->where('term',$langid);
+	}
 	public function where($item, $value, $action = '='){ 
 		if(in_array($item,array('post_content','post_title','ID','post_status','post_date','post_parent'))){
 			$this->where[]='('.$item.$action.'"'.$value.'")';
@@ -263,17 +270,20 @@ class Query{
 				$image=[$upload_dir['baseurl'].'/'.pathinfo($th['file'],PATHINFO_DIRNAME).'/'.$th['sizes'][$size]['file'],$th['sizes'][$size]['width'],$th['sizes'][$size]['height']];
 				$image=apply_filters('wp_get_attachment_image_src',$image,$ID,$size,false);
 				$result[$prefix.'_'.$size]=$image[0];
+				$result[$prefix.'_'.$size.'_obj']=$image;
 			}else{
 				$global_sizes=wp_get_additional_image_sizes();
 				if($global_sizes[$size]['width']>$th['width']&&$global_sizes[$size]['height']>$th['height']){
 					$image=[$upload_dir['baseurl'].'/'.$th['file'],$th['width'],$th['height']];
 					$image=apply_filters('wp_get_attachment_image_src',$image,$ID,$size,false);
 					$result[$prefix.'_'.$size]=$image[0];
+					$result[$prefix.'_'.$size.'_obj']=$image;
 				}else{
 					$r=image_downsize($ID,$size);
 					if(!empty($r)){
 						$image=apply_filters('wp_get_attachment_image_src',$r,$ID,$size,false);
 						$result[$prefix.'_'.$size]=$image[0];
+						$result[$prefix.'_'.$size.'_obj']=$image;
 					}
 				}
 			}

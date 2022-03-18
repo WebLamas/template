@@ -7,15 +7,14 @@ class WeblamasTemplate{
 		$templates[]=$template.'.php';
 		self::$templates=$templates;
 	}
-	public static function cacheTemplate($template){
-		$f_cached=get_stylesheet_directory().'/html_cached/'.$template;
+	public static function cacheTemplate($template,$f_cached){
 		$s=self::getFrontEditable($template,'user');
 		if(!is_dir(get_stylesheet_directory().'/html_cached/')){
 			mkdir(get_stylesheet_directory().'/html_cached/');
 		}
 		file_put_contents($f_cached,$s);
 	}
-	function setInnerHTML($element, $html){
+	public static function setInnerHTML($element, $html){
 		$fragment = $element->ownerDocument->createDocumentFragment();
 		$fragment->appendXML($html);
 		while ($element->hasChildNodes())
@@ -29,7 +28,6 @@ class WeblamasTemplate{
 		foreach($codes as $id=>$code){
 			$s=str_replace($code,'<php>'.$id.'</php>',$s);
 		}
-		
 		$dom = new DOMDocument;
 		$s=mb_convert_encoding($s, 'HTML-ENTITIES', 'UTF-8');
 		$dom->loadHTML('<body>'.$s.'</body>',LIBXML_NOERROR|LIBXML_NOWARNING);
@@ -39,6 +37,9 @@ class WeblamasTemplate{
 			$s=$node->getAttribute('data-editable');
 			
 			if(is_string($s)){
+				if(function_exists('pll_current_language')&&pll_current_language()!=pll_default_language()){
+					$s.='_'.pll_current_language();
+				}
 				$l=get_option('frontval_'.$s);
 				if($l!==false){
 					self::setInnerHtml($node,stripslashes($l));
@@ -73,13 +74,16 @@ class WeblamasTemplate{
 		foreach(array_reverse($templates) as $t){
 			$f=get_stylesheet_directory().'/html/'.$t;
 			$f_cached=get_stylesheet_directory().'/html_cached/'.$t;
+			if(function_exists('pll_current_language')&&pll_current_language()!=pll_default_language()){
+				$f_cached=str_replace('.php','_'.pll_current_language().'.php',$f_cached);
+			}
 			if(file_exists($f)){
 				if( current_user_can('editor') || current_user_can('administrator') ){
 					self::adminTemplate($t);
 					return;
 				}else{
 					if(!file_exists($f_cached)||true){
-						self::cacheTemplate($t);
+						self::cacheTemplate($t,$f_cached);
 					}
 					//include($f_fac);
 					include($f_cached);

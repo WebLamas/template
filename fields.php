@@ -16,7 +16,7 @@ Class FieldRenderer{
 			global $wpdb;
 			$posts=$wpdb->get_results('select ID,concat(post_title,if(post_status="draft","(Черновик)","")) as post_title from wp_posts where post_type="'.$field['post_type'].'"');
 			$field['options']=array();	
-			if($field['canempty']){
+			if(!empty($field['canempty'])){
 				$field['options'][0]='Не связяно';
 			}
 			foreach($posts as $post){
@@ -76,7 +76,7 @@ Class FieldRenderer{
 		}elseif($field['type']=='textarea'){
 			echo '<textarea name="'.$field_name.'" style="width:100%" class="textarea_autosize">'.$field_value.'</textarea>';
 		}elseif($field['type']=='select'){
-			$multiple=$field['multiple'];
+			$multiple=!empty($field['multiple']);
 			if(!is_array($field_value)){
 				$field_value=[$field_value];
 			}

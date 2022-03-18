@@ -3,12 +3,9 @@
 require_once('weblamas_templates.php');
 
 require_once('weblamas_options.php');
-
 require_once('query.php');
-
 require_once('fields.php');
 require_once('custom_post.php');
-
 add_theme_support( 'post-thumbnails' ); 
 //отменить  srcset
 add_filter( 'wp_calculate_image_srcset_meta', '__return_null' );
@@ -107,10 +104,8 @@ add_action( 'wp_ajax_update_frontval', function(){
 	wp_die();
 });
 
-function parse_gallery($gallery_html){
-	preg_match_all('/<li.+?data-id="(\d+)".+?<\/li>/',$gallery_html,$matches);
-	foreach($matches[1] as $l=>$mt){
-		$gallery_ids[$mt]=strip_tags($matches[0][$l]);
-	}
-	return $gallery_ids;
+
+function wl_get_template_part($slug,$name=null,$args=[]){
+	$sl=str_replace('html/','',$slug);
+	WeblamasTemplate::loadTemplate([$sl.'.php']);
 }

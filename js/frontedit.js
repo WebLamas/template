@@ -32,7 +32,11 @@ $(document).ready(function(){
 	$('.frontedit__save').click(function(){
 		let editableid=$(this).closest('.frontedit').data('editableid');
 		let data={action:'update_frontval',id:editableid,value:$('[data-editable="'+editableid+'"]').html()};
-		jQuery.post('/wp-admin/admin-ajax.php', data	, function(response) {
+		let lng=$('body').data('lang');
+		if(lng){
+			data.lang=lng;
+		}
+		jQuery.post('/wp-admin/admin-ajax.php', data, function(response) {
 			console.log(response);
 		});
 	})

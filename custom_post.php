@@ -62,17 +62,17 @@ abstract class WeblamasCustomPost{
 	public static function archivedescriptionFields($variant='',$title=''){
 		$value=get_option('archivedesc_'.static::$name);
 		$value=unserialize(base64_decode($value));
-		$value=$value[$variant];
+		$value=$value[$variant]??[];
 		$editor_name='description__'.$variant;
-		echo '<h1 class="wp-heading-inline">Описание для архива '.$title.'</h1>';
+		echo '<h1 class="wp-heading-inline">Описание для архива '.($title ?? '').'</h1>';
 		echo '<div><label>Тайтл '.$title.'</label></div>';
-		echo '<div><input type="text" name="desc['.$variant.'][title]" value="'.htmlspecialchars($value['title']).'"></div>';
+		echo '<div><input type="text" name="desc['.$variant.'][title]" value="'.htmlspecialchars($value['title']??'').'"></div>';
 		echo '<div><label>Заголовок (h1) '.$title.'</label></div>';
-		echo '<div><input type="text" name="desc['.$variant.'][h1]" value="'.htmlspecialchars($value['h1']).'"></div>';
+		echo '<div><input type="text" name="desc['.$variant.'][h1]" value="'.htmlspecialchars($value['h1']??'').'"></div>';
 		echo '<div><label>Мета описание '.$title.'</label></div>';
-		echo '<div><textarea name="desc['.$variant.'][meta_desc]">'.$value['meta_desc'].'</textarea></div>';
+		echo '<div><textarea name="desc['.$variant.'][meta_desc]">'.($value['meta_desc']??'').'</textarea></div>';
 		echo '<div><label>Описание '.$title.'</label></div>';
-		wp_editor($value['description'],'description__'.$variant);
+		wp_editor($value['description']??'','description__'.$variant);
 		}
 	public static function archivedescription(){
 		echo '<div class="wrap">';
@@ -114,8 +114,8 @@ abstract class WeblamasCustomPost{
 			'show_ui'  => true,
 			'has_archive' => true,
 			'menu_position'=>5,
-			'query_var'             => true,
-			'rewrite'             => array('slug' => static::$name),
+			'query_var'     => true,
+			'rewrite'       => array('slug' => static::$name),
 			);
 		foreach($q as $k=>$v){
 			if(!isset($args[$k])){
@@ -162,7 +162,7 @@ abstract class WeblamasCustomPost{
 					}
 				foreach($fieldm['fields'] as $field){
 					echo '<div><label for="'.$fieldm['name'].'['.$field['name'].']'.'">'.$field['label'].'</label></div><div>';
-					FieldRenderer::render($field,$fieldm['name'].'['.$field['name'].']',!empty($json_field_value[$field['name']])?$json_field_value[$field['name']]:'');
+					FieldRenderer::render($field,$fieldm['name'].'['.$field['name'].']',$json_field_value[$field['name']]??'');
 					echo '</div>';
 				}
 				

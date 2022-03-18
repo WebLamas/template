@@ -68,7 +68,7 @@ class WeblamasOptions_parent{
 			if(empty($field_value)){
 				$field_value=array();
 			}else{
-				$field_value=unserialize($field_value);
+				$field_value=unserialize(base64_decode($field_value));
 			}
 
 			if(empty($field_value['title'])){
@@ -83,7 +83,7 @@ class WeblamasOptions_parent{
 			if(empty($field_value)){
 				$field_value=array();
 			}else{
-				$field_value=unserialize($field_value);
+				$field_value=unserialize(base64_decode($field_value));
 			}
 
 			if(empty($field_value['title'])){
@@ -92,8 +92,9 @@ class WeblamasOptions_parent{
 		}elseif(is_post_type_archive()){ 
 			$field_value=get_option('archivedesc_'.get_queried_object()->name);
 			$field_value=unserialize(base64_decode($field_value));
+			if(empty($field_value))$field_value=[];
 			if(function_exists('pll_current_language')){
-				$field_value=$field_value[pll_current_language()];
+				$field_value=$field_value[pll_current_language()]??[];
 			}else{
 				$field_value=$field_value['default'];
 			}
@@ -113,7 +114,7 @@ class WeblamasOptions_parent{
 			$field_value['title']='404';
 			}
 		$field_value=apply_filters('wl_meta_fields',$field_value);
-		if(empty($field_value['title'])||empty($field_value['description'])){
+		if(empty($field_value['title']) || empty($field_value['description'])){
 			
 			$hfv=get_post_meta( get_option( 'page_on_front' ), '_meta_tags', true );
 			if(empty($field_value)){
@@ -128,7 +129,7 @@ class WeblamasOptions_parent{
 			if(empty($field_value['title'])){
 				$field_value['title']=$hfv['title'];
 			}
-			if(empty($field_value['description'])){
+			if(empty($field_value['description'])&&!empty($hfv['description'])){
 				$field_value['description']=$hfv['description'];
 			}
 		}
@@ -150,8 +151,9 @@ class WeblamasOptions_parent{
 	}
 	public function save_meta($post_id){
 		if(!empty($_POST['meta_tags'])&&is_array($_POST['meta_tags'])){
-		$my_data=serialize($_POST['meta_tags']);
-		update_post_meta( $post_id, '_meta_tags', $my_data );
+			$post=array_map('stripslashes_deep',$_POST);
+			$my_data=base64_encode(serialize($post['meta_tags']));
+			update_post_meta( $post_id, '_meta_tags', $my_data );
 		}
 	
 	}
@@ -161,17 +163,16 @@ class WeblamasOptions_parent{
 	}
 	public function meta_metabox_callback($post){
 		$field_value=get_post_meta( $post->ID, '_meta_tags', true );
-
 		if(is_array($field_value)){
 			$field_value=$field_value;
 		}elseif(!empty($field_value)){
-			$field_value=unserialize($field_value);
+			$field_value=unserialize(base64_decode($field_value));
 		}else{
 			$field_value=array();
 			
 			
 		}
-		echo '<div><label>Заголовок страницы в браузере</label></div><div><input type="text" name="meta_tags[title]" value="'.$field_value['title'].'" style="width:100%"></div>';
+		echo '<div><label>Заголовок страницы в браузере</label></div><div><input type="text" name="meta_tags[title]" value="'.htmlspecialchars($field_value['title']).'" style="width:100%"></div>';
 		echo '<div><label>Мeta Description</label></div><div><textarea rows=3 name="meta_tags[description]" style="width:100%">'.htmlspecialchars($field_value['description']).'</textarea></div>';
 	}
 
@@ -262,10 +263,10 @@ class WeblamasOptions_parent{
 			</style>
 
 </div>
-<?
+<?php
 	}
 	public function modify_field($field,$value){
-		if($field['frontedit']){
+		if(!empty($field['frontedit'])){
 			update_option('frontval_'.$field['name'],$value);
 			$files = glob(get_stylesheet_directory().'/html_cached/*'); // get all file names
 			foreach($files as $file){ // iterate files
@@ -303,16 +304,27 @@ function get_archive_desc(){
 	//var_dump(get_queried_object()->name);
 	$field_value=get_option('archivedesc_'.get_queried_object()->name);
 	$field_value=unserialize(base64_decode($field_value));
-	return $field_value['default'];
+	if(function_exists('pll_current_language')){
+		$field_value=$field_value[pll_current_language()]??[];
+	}else{
+		$field_value=$field_value['default'];
+	}
+	return $field_value;
+}
+if(function_exists('pll_current_language')){
+	add_filter('wlcp_multiple_descriptions',function($multiple){
+		return wp_list_pluck(pll_the_languages(['raw'=>true]),'name','slug');
+	});
 }
 
 function ___save_term_meta_text( $term_id ) {
 	if(!empty($_POST['meta_tags'])&&is_array($_POST['meta_tags'])){
-		$my_data=serialize($_POST['meta_tags']);
+		$post=array_map('stripslashes_deep',$_POST);
+		$my_data=base64_encode(serialize($post['meta_tags']));
 		update_term_meta( $term_id, '_meta_tags', $my_data );
 	}
 }
-foreach(['category'] as $category){
+foreach(['category','post_tag'] as $category){
 
 	// ADD FIELD TO CATEGORY TERM PAGE
 	add_action( $category.'_add_form_fields', function(){
@@ -331,19 +343,19 @@ foreach(['category'] as $category){
 	add_action( $category.'_edit_form_fields', function($term){
 		$value = get_term_meta( $term->term_id, '_meta_tags', true );
 		$value1 = get_term_meta( $term->term_id, 'main_desc', true );
-		$value=unserialize($value);
+		$value=unserialize(base64_decode($value));
 		?>
 
 		<tr class="form-field term-meta-text-wrap">
 			<th scope="row"><label for="term-meta-text">Заголовок категории в браузере</label></th>
 			<td>
-				<input type="text" name="meta_tags[title]" id="term-meta-text" value="<?php echo esc_attr( $value['title']); ?>" class="term-meta-text-field"  />
+				<input type="text" name="meta_tags[title]" id="term-meta-text" value="<?php echo esc_attr( $value['title']??''); ?>" class="term-meta-text-field"  />
 			</td>
 		</tr>
 		<tr class="form-field term-meta-text-wrap">
 			<th scope="row"><label for="term-meta-text">Мета описание</label></th>
 			<td>
-				<input type="text" name="meta_tags[description]" id="term-meta-text" value="<?php echo esc_attr( $value['description']); ?>" class="term-meta-text-field"  />
+				<input type="text" name="meta_tags[description]" id="term-meta-text" value="<?php echo esc_attr( $value['description']??''); ?>" class="term-meta-text-field"  />
 			</td>
 		</tr>
 
