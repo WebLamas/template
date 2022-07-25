@@ -14,9 +14,13 @@ class WeblamasOptions_parent{
 		list($atts,$content,$tag)=$arguments;
 		$content=do_shortcode($content);
 		$f=get_stylesheet_directory().'/html/mod_'.$function.'.php';
+		if(!file_exists($f)){
+			$f=get_template_directory().'/html/mod_'.$function.'.php';
+		}
 		if(file_exists($f)){
 			ob_start();
-			WeblamasTemplate::loadTemplate(['mod_'.$function.'.php']);
+			include($f);
+			//WeblamasTemplate::loadTemplate(['mod_'.$function.'.php']);
 			$q=ob_get_clean();
 			return $q;
 			}

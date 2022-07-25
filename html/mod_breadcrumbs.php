@@ -14,6 +14,13 @@ if(!empty($atts['links'])){
 	$cat=reset($cat);
 	$breadcrumbs[]=['url'=>get_term_link($cat),'title'=>$cat->name];
 }elseif(get_post_type()=='page'){
+	$p=get_post_parent();
+	$brs=[];
+	while($p){
+		$brs[]=['url'=>get_permalink($p),'title'=>$p->post_title];
+		$p=get_post_parent($p);
+	}
+	$breadcrumbs=array_merge($breadcrumbs,array_reverse($brs));
 	//nothing)
 }else{
 	$object=get_post_type_object(get_post_type());
