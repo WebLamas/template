@@ -1,6 +1,6 @@
 <?php 
 $breadcrumbs=[];
-$breadcrumbs[]=['url'=>'/','title'=>'Главная'];
+$breadcrumbs[]=['url'=>'/','title'=>pll__('Головна')];
 if(!empty($atts['links'])){
 	$crumbs=explode('|',$atts['links']);
 	for($i=0;$i<count($crumbs);$i+=2){
@@ -9,6 +9,8 @@ if(!empty($atts['links'])){
 	//var_dump($atts['links']);
 }elseif(is_search()){
 	$breadcrumbs[]=['url'=>'','title'=>'Результаты поиска'];
+}elseif(is_category()){
+	$breadcrumbs[]=['url'=>'#','title'=>get_queried_object()->name];
 }elseif(get_post_type()=='post'){
 	$cat=(get_the_category(get_the_ID()));
 	$cat=reset($cat);

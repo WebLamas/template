@@ -16,6 +16,7 @@ class WeblamasTemplate{
 	}
 	public static function setInnerHTML($element, $html){
 		$fragment = $element->ownerDocument->createDocumentFragment();
+		$html=str_replace('<br>','<br/>',$html);
 		$fragment->appendXML($html);
 		while ($element->hasChildNodes())
 			$element->removeChild($element->firstChild);
@@ -65,10 +66,10 @@ class WeblamasTemplate{
 	public static function adminTemplate($template){
 		$s=self::getFrontEditable($template,'admin');
 		eval('?>'.$s);
-		echo '<div class="frontedit"><span class="frontedit__save">Сохранить</span></div>';
 	}
 	public static function loadTemplate($templates=array()){
 		if(empty($templates)){
+			$need_frontedit_button=true;
 			$templates=self::get_subtemplates();
 		}
 		foreach(array_reverse($templates) as $t){
@@ -79,6 +80,9 @@ class WeblamasTemplate{
 			}
 			if(file_exists($f)){
 				if( current_user_can('editor') || current_user_can('administrator') ){
+					if($need_frontedit_button){
+						echo '<div class="frontedit"><span class="frontedit__save">зберегти</span></div>';
+					}
 					self::adminTemplate($t);
 					return;
 				}else{

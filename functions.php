@@ -94,7 +94,11 @@ add_action( 'init', 'disable_emojis' );
 
 add_action( 'wp_ajax_update_frontval', function(){
 	global $wpdb; // this is how you get access to the database
-	update_option('frontval_'.$_POST['id'],$_POST['value']);
+	$option=$_POST['id'];
+	if(!empty($_POST['lang'])&&pll_default_language()!=$_POST['lang']){
+		$option.='_'.$_POST['lang'];
+	}
+	update_option('frontval_'.$option,$_POST['value']);
 	$files = glob(get_stylesheet_directory().'/html_cached/*'); // get all file names
 	foreach($files as $file){ // iterate files
 	  if(is_file($file)) {

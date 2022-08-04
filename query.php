@@ -84,6 +84,10 @@ class Query{
 		}
 		return $this;		
 	}
+	public function orderByRaw($text){
+		$this->orderby=$text;
+		return $this;
+	}
 	public function orderBy($param,$order="desc"){
 		$this->fields($param,true);
 		$this->orderby.=$param.' '.$order;
@@ -114,8 +118,8 @@ class Query{
 			}
 		}
 		if($item=='term'){
-			$this->joins[]='left join `wp_term_relationships` on object_id=`wp_posts`.`ID` and `term_taxonomy_id`="'.$value.'"';
-			$this->where[]='(`wp_term_relationships`.object_id is not null)';
+			$this->joins[]='left join `wp_term_relationships` `wtr'.((int)$value).'` on `wtr'.((int)$value).'`.object_id=`wp_posts`.`ID` and `wtr'.((int)$value).'`.`term_taxonomy_id`="'.$value.'"';
+			$this->where[]='(`wtr'.((int)$value).'`.object_id is not null)';
 			return $this;
 		}
 		var_dump('unknown where');

@@ -13,14 +13,17 @@ Class FieldRenderer{
 				$field['options'][$cat->term_id]=$cat->name;	
 			}	
 		}elseif($field['type']=='post_type'){
-			global $wpdb;
-			$posts=$wpdb->get_results('select ID,concat(post_title,if(post_status="draft","(Черновик)","")) as post_title from wp_posts where post_type="'.$field['post_type'].'"');
+			$q=new Query();
+			$q->post_type($field['post_type']);
+			$q->post_fields=[];
+			$items=$q->whereLang()->fields(['post_title','post_status','ID'])->get();
 			$field['options']=array();	
 			if(!empty($field['canempty'])){
 				$field['options'][0]='Не связяно';
 			}
-			foreach($posts as $post){
-				$field['options'][$post->ID]=$post->post_title;
+			foreach($items as $item){
+				if(!in_array($item['post_status'],['publish','draft']))continue;
+				$field['options'][$item['ID']]=$item['post_title'].' '.($item['post_status']=='draft'?'(Чернетка)':'');
 			}
 			$field['type']='select';	
 		}elseif($field['type']=='custom_table'){
@@ -73,8 +76,9 @@ Class FieldRenderer{
 			echo '<input type="date" name="'.$field_name.'" value="'.$field_value.'">';
 		}elseif($field['type']=='color'){
 			echo '<input type="color" name="'.$field_name.'" value="'.$field_value.'">';
-		}elseif($field['type']=='textarea'){
-			echo '<textarea name="'.$field_name.'" style="width:100%" class="textarea_autosize">'.$field_value.'</textarea>';
+			
+		}elseif($field['type']=='textarea'){			
+			echo '<textarea name="'.$field_name.'" style="width:100%" class="textarea_autosize">'.htmlspecialchars($field_value).'</textarea>';
 		}elseif($field['type']=='select'){
 			$multiple=!empty($field['multiple']);
 			if(!is_array($field_value)){
@@ -110,7 +114,7 @@ Class FieldRenderer{
 			<?php
 		}elseif($field['type']=='mappoint'){
 			if(empty($field_value)){
-				$field_value=base64_encode('{"lat": 55.75583, "lng": 37.61778}');
+				$field_value=base64_encode('{"lat": 50.45000, "lng": 30.51667}');
 			}
 			echo '<div><script>
 			function base64_encode( data ) {    // Encodes data with MIME base64
@@ -165,7 +169,7 @@ Class FieldRenderer{
 			echo '<div id="map"></div><style>#map{height:300px}</style>';
 			//echo '<script src="'.get_template_directory_uri().'/admin.js"></script>';
 
-			echo '<script src="https://maps.googleapis.com/maps/api/js?key='.$key.'&signed_in=true&callback=initMap" async defer></script>';
+			echo '<script src="https://maps.googleapis.com/maps/api/js?key='.WeblamasOptions::getValue('gmapkey').'&signed_in=true&callback=initMap" async defer></script>';
 			echo '<input type="hidden" id="coords" name="'.$field_name.'" value=\''.$field_value.'\'size="25" /></div>';
 		}elseif($field['type']=='curcalendar'){
 			echo '<div class="curcalendar">';
